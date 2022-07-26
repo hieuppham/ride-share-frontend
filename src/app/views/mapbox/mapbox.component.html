@@ -1,0 +1,92 @@
+<div id="map"></div>
+
+<!-- search form -->
+<div id="custom-filter-search">
+    <input _ngcontent-ajb-c205="" id="distance" type="text" readonly="true"
+        class="distance-container mapboxgl-ctrl-geocoder--input mapboxgl-ctrl" value="0.0 km"><input
+        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl" type="time" id="time-start"><input
+        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl" type="time" id="time-end"><select
+        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+        <option value="Both">Giới tính</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+    </select>
+</div>
+<!-- end search form-->
+
+<!-- share form -->
+<div id="custom-filter-share">
+    <input _ngcontent-ajb-c205="" id="distance" type="text" readonly="true"
+        class="distance-container mapboxgl-ctrl-geocoder--input mapboxgl-ctrl" value="0.0 km"><input
+        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl" type="time" id="time-start"><input
+        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl" type="time" id="time-end"><select
+        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+        <option value="Both">Giới tính</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+    </select>
+</div>
+<!-- end share form-->
+
+<!-- toggle share form -->
+<button id="btn-toggle-share" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">Chia sẻ chuyến
+    đi</button>
+<!-- end toggle share form -->
+
+<button id="btn-toggle-profile" style="margin: 10px;" [cModalToggle]="verticallyCenteredModal.id" cButton
+    class="py-0 nav-link btn" ng-reflect-caret="false">
+    <c-avatar ctextcolor="primary" shape="rounded-1" size="md" src="./assets/img/avatars/8.jpg" status="success"
+        _nghost-oji-c69="" ng-reflect-shape="rounded-1" ng-reflect-size="md" ng-reflect-src="./assets/img/avatars/8.jpg"
+        ng-reflect-status="success" ng-reflect-color="primary" class="avatar avatar-md rounded-1 text-primary">
+    </c-avatar>
+</button>
+
+<c-modal #verticallyCenteredModal alignment="center" id="verticallyCenteredModal">
+    <c-modal-header>
+        <h5 cModalTitle>Thông tin người dùng</h5>
+        <button class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+            [cModalToggle]="verticallyCenteredModal.id" cButton>
+            x
+        </button>
+    </c-modal-header>
+    <form>
+        <c-modal-body>
+
+            <input id="full-name" type="text" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Tên đầy đủ" required>
+            <input id="dob" type="date" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Ngày sinh" required>
+            <select id="gender" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input">
+                <option value="both" selected>Giới tính</option>
+                <option value="female">Nữ</option>
+                <option value="male">Nam</option>
+            </select>
+            <input id="face-image" type="file"
+                class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Hình ảnh khuôn mặt" required>
+            <input id="phone" type="text" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Số điện thoại" required>
+            <input id="email" type="text" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Email" required>
+            <input id="address" type="text" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Địa chỉ" required>
+            <select id="vehicle-type" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input">
+                <option value="motobike" selected>Xe máy</option>
+                <option value="car">Ô tô</option>
+            </select>
+            <input id="vehicle-license-plate" type="text"
+                class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" placeholder="Biển số"
+                required>
+            <input id="vehicle-images" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                type="file" multiple required>
+        </c-modal-body>
+        <c-modal-footer style="justify-content: 'center'">
+            <button class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" cButton
+                type="submit">Understood</button>
+        </c-modal-footer>
+    </form>
+</c-modal>
+
+<div id="popup-click" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+    <a class="apply-point" type="button">Apply</a>
+</div>
