@@ -1,3 +1,7 @@
+:host {
+    min-height: 100%;
+    height: auto;
+}
 #map {
     position: absolute;
     top: 0;
@@ -40,9 +44,186 @@ border-radius: 3px;
 }
 
 
-#popup-click {
+div#popup-click {
     background-color: white;
     margin: 10px;
     bottom: 0;
     display: none;
+    min-width: 100px;
+}
+
+#line-string {
+    display: none;
+}
+
+#form-ride-share {
+    display: none;
+}
+
+.mapboxgl-ctrl-top-right {
+    display: flex;
+    flex-direction: column;
+}
+
+div#user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+div#user-info > * {
+    margin-bottom: 10px;
+}
+
+div#vehicles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+div#vehicles > * > *{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+div.vehicle-info {
+    display: flex;
+    flex-direction: row;
+}
+
+div.vehicle-info > * {
+    min-width: 100px;
+    margin :10px 10px 0 0 ;
+    font-size: 12px;
+}
+
+button#btn-close-modal {
+    min-width: 10px;
+    max-width: 50px;
+    padding: 5px;
+}
+
+.modal-footer {
+    margin: 0;
+    padding: 5px;
+    border-top: none;
+    justify-content: space-between;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.modal-footer > button {
+    min-width: fit-content;
+    margin: 5px;
+}
+
+input#distance {
+    font-size: 14px;
+}
+
+button#btn-apply {
+    min-width: fit-content;
+}
+
+.green-background-white-text {
+    background-color: #00a845;
+    color: white;
+}
+
+.white-background-black-text{
+    background-color: white;
+    color: rgba(44, 56, 74, 0.681) !important;
+}
+
+.gray-background-white-text {
+    background-color: #917700;
+    color: white;
+}
+
+.red-background-white-text {
+    background-color: #ce5c18;
+    color: white;
+}
+
+.mapboxgl-ctrl-bottom-left {
+    display: flex;
+}
+
+button#btn-toggle-share {
+    // min-width: fit-content;
+}
+
+button#btn-toggle-profile {
+    margin: 10px; 
+    z-index: 1;
+    // position: fixed;
+}
+
+.mapboxgl-ctrl-top-center {
+    position: relative;
+    top: 0;
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+button#btn-admin-page {
+    max-width: fit-content;
+}
+
+button#btn-toggle-show-my-rides {
+    // min-width: fit-content;
+}
+
+.mapboxgl-ctrl-mid-right {
+    right: 0;
+    top: 8%;
+    position: absolute;
+    margin-right: 10px;
+    min-width: 150px; 
+}
+
+.ride-response {
+    margin-top: 10px;
+    margin-bottom: 0;
+    background-color: white;
+}
+
+.ride-response > p {
+    margin-bottom: 0;
+}
+
+.ride-response > button {
+    max-width: fit-content;
+}
+
+div#popup-click {
+    display: flex;
+    background-color: none;
+    margin: 0;
+}
+
+button#btn-admin-page {
+    min-width: fit-content;
+    margin: 10px 0 0 0;
+}
+
+div#text-share-wrapper {
+    min-height: 100px;
+    padding: 0;
+}
+
+textarea#note {
+    border: none;
+}
+
+div.ride-response {
+    min-width: fit-content;
+    padding: 5px 10px;
+    height: fit-content;
+}
+
+#table-wrapper {
+    bottom: 0;
 }

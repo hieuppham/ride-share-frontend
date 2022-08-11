@@ -1,29 +1,34 @@
 import { Injectable } from '@angular/core';
-import * as mapboxgl from 'mapbox-gl';
-import * as geojsonCustom from '../fake-data/geojsonraw.json';
-import {
-  Feature,
-  Geometry,
-  FeatureCollection,
-  GeoJsonProperties,
-} from 'geojson';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
+import { Observable } from 'rxjs';
+import { IRide } from 'src/app/interface/ride';
+import { IRideRequestDto } from 'src/app/interface/ride-request-dto';
+import { IRideResponseDto } from '../../interface/ride-reponse-dto';
 @Injectable({
   providedIn: 'root',
 })
 export class MapboxService {
-  constructor() {}
+  private API_URL_RIDE: string = environment.apiUrl + '/ride';
+  constructor(private http: HttpClient) {}
 
-  getMarkers(): mapboxgl.GeoJSONSourceRaw {
-    const geoJson: mapboxgl.GeoJSONSourceRaw =
-      geojsonCustom as mapboxgl.GeoJSONSourceRaw;
-    return geoJson;
+  createRide(formValue: any): Observable<IRide> {
+    const ride: IRide = formValue as IRide;
+    return this.http.post<IRide>(`${this.API_URL_RIDE}/create`, ride);
   }
 
-  getFeatures(): Array<Feature<Geometry, GeoJsonProperties>> {
-    const data = this.getMarkers().data as FeatureCollection<
-      Geometry,
-      GeoJsonProperties
-    >;
-    return data.features as Array<Feature<Geometry, GeoJsonProperties>>;
+  getRidesByUid(uid: string): Observable<IRide[]> {
+    return this.http.get<IRide[]>(`${this.API_URL_RIDE}/${uid}`);
+  }
+
+  findRides(rideRequestDto: IRideRequestDto): Observable<IRideResponseDto[]> {
+    return this.http.post<IRideResponseDto[]>(
+      `${this.API_URL_RIDE}/find`,
+      rideRequestDto
+    );
+  }
+
+  getTimeNow(): string {
+    return new Date().toISOString().slice(0, 16);
   }
 }

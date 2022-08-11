@@ -1,29 +1,29 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MapboxComponent } from './mapbox.component';
-import { MapboxRoutingModule } from './mapbox-routing.module';
+import { ToastModule } from '@coreui/angular';
 import {
-  CardModule,
-  FormModule,
-  ModalModule,
-  GridModule,
   AvatarModule,
-  ToastModule,
+  CardModule,
+  GridModule,
+  TableModule,
+  ModalModule,
 } from '@coreui/angular';
 
-import { IconModule } from '@coreui/icons-angular';
+import { ReactiveFormsModule } from '@angular/forms';
+
+import { MapboxComponent } from './mapbox.component';
+
 @NgModule({
-  declarations: [MapboxComponent],
   imports: [
-    MapboxRoutingModule,
-    CommonModule,
     CardModule,
-    FormModule,
-    ModalModule,
     GridModule,
     AvatarModule,
+    TableModule,
+    ModalModule,
+    ReactiveFormsModule,
+    CommonModule,
     ToastModule,
-    IconModule,
   ],
+  declarations: [MapboxComponent],
 })
 export class MapboxModule {}

@@ -1,32 +1,23 @@
 import { NgModule } from '@angular/core';
-import {
-  HashLocationStrategy,
-  LocationStrategy,
-  PathLocationStrategy,
-} from '@angular/common';
+import { HashLocationStrategy, LocationStrategy } from '@angular/common';
 import { BrowserModule, Title } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ReactiveFormsModule } from '@angular/forms';
-
+import { DatePipe } from '@angular/common';
 import {
   PERFECT_SCROLLBAR_CONFIG,
   PerfectScrollbarConfigInterface,
   PerfectScrollbarModule,
 } from 'ngx-perfect-scrollbar';
 
-// Import routing module
+import { PagesModule } from './views/pages/pages.module';
+
 import { AppRoutingModule } from './app-routing.module';
 
-// Import app component
 import { AppComponent } from './app.component';
 
-// Import containers
-import {
-  DefaultFooterComponent,
-  DefaultHeaderComponent,
-  DefaultLayoutComponent,
-} from './containers';
-
+import { DefaultLayoutComponent } from './containers';
+import { RouterModule } from '@angular/router';
 import {
   AvatarModule,
   BadgeModule,
@@ -46,23 +37,22 @@ import {
   SidebarModule,
   TabsModule,
   UtilitiesModule,
+  ToastModule,
 } from '@coreui/angular';
-
+import { HttpClientModule } from '@angular/common/http';
 import { IconModule, IconSetService } from '@coreui/icons-angular';
+import { MapboxModule } from './views/mapbox/mapbox.module';
 
 const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
   suppressScrollX: true,
 };
 
-const APP_CONTAINERS = [
-  DefaultFooterComponent,
-  DefaultHeaderComponent,
-  DefaultLayoutComponent,
-];
+const APP_CONTAINERS = [DefaultLayoutComponent];
 
 @NgModule({
   declarations: [AppComponent, ...APP_CONTAINERS],
   imports: [
+    RouterModule,
     BrowserModule,
     BrowserAnimationsModule,
     AppRoutingModule,
@@ -76,6 +66,7 @@ const APP_CONTAINERS = [
     IconModule,
     PerfectScrollbarModule,
     NavModule,
+    ToastModule,
     ButtonModule,
     FormModule,
     UtilitiesModule,
@@ -83,12 +74,15 @@ const APP_CONTAINERS = [
     ReactiveFormsModule,
     SidebarModule,
     SharedModule,
+    HttpClientModule,
     TabsModule,
     ListGroupModule,
     ProgressModule,
     BadgeModule,
     ListGroupModule,
     CardModule,
+    PagesModule,
+    MapboxModule,
   ],
   providers: [
     {
@@ -101,6 +95,7 @@ const APP_CONTAINERS = [
     },
     IconSetService,
     Title,
+    DatePipe,
   ],
   bootstrap: [AppComponent],
 })

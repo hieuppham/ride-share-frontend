@@ -25,4 +25,8 @@ $enable-rtl: true;
 // If you want to add something do it here
 @import "custom";
 
-@import "mapbox-gl-geocoder"
+@import "mapbox-gl-geocoder";
+
+@import "datatables";
+
+// @import "mapbox-gl-directions";

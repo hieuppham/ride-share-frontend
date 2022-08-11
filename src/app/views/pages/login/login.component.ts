@@ -1,8 +1,5 @@
-import { Component, EventEmitter } from '@angular/core';
-// import { AuthService } from '../../../firebase/auth.service';
-
+import { Component } from '@angular/core';
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import * as firebaseui from 'firebaseui';
 import {
   GoogleAuthProvider,
   getAuth,
@@ -10,11 +7,12 @@ import {
   signInWithPopup,
   OAuthCredential,
   User,
-  UserCredential,
 } from 'firebase/auth';
 import { environment } from 'src/environments/environment';
-import { Output } from '@angular/core';
-import { Route, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { IUser } from 'src/app/interface/user';
+import { UserService } from '../../../user.service';
+import { EEntityStatus } from 'src/app/interface/entity-status';
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -25,20 +23,39 @@ export class LoginComponent {
   private auth: Auth = getAuth(this.app);
   private provider: GoogleAuthProvider = new GoogleAuthProvider();
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private userService: UserService) {}
 
   public authGoogle(): void {
     signInWithPopup(this.auth, this.provider)
       .then((result) => {
-        const credential: OAuthCredential | null =
-          GoogleAuthProvider.credentialFromResult(result);
-        this.router.navigate(['/map'], {
-          queryParams: { photoURL: result.user.photoURL },
+        this.userService.saveUser(this.toIUser(result.user)).subscribe({
+          next: (res) => {
+            this.router.navigate(['/map'], {
+              queryParams: { uid: res.uid },
+            });
+          },
+          error: (err) => console.error(err),
         });
       })
       .catch((error) => {
         const credential: OAuthCredential | null =
           GoogleAuthProvider.credentialFromError(error);
       });
+  }
+
+  private toIUser(googleUser: User): IUser {
+    const user: IUser = {
+      id: null,
+      uid: googleUser.uid,
+      gender: null,
+      dob: null,
+      photoUrl: googleUser.photoURL,
+      fullName: null,
+      email: googleUser.email,
+      phone: googleUser.phoneNumber,
+      vehicles: null,
+      status: EEntityStatus.INACTIVE,
+    };
+    return user;
   }
 }

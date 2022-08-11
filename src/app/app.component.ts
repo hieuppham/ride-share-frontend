@@ -7,7 +7,7 @@ import { Title } from '@angular/platform-browser';
 
 @Component({
   selector: 'body',
-  template: '<router-outlet></router-outlet>',
+  template: `<router-outlet></router-outlet>`,
 })
 export class AppComponent implements OnInit {
   title = 'Ride Share';
