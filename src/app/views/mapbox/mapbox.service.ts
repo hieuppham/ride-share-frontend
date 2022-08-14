@@ -2,9 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { Observable } from 'rxjs';
+import { IRideResponseDto } from 'src/app/interface/ride-reponse-dto';
 import { IRide } from 'src/app/interface/ride';
-import { IRideRequestDto } from 'src/app/interface/ride-request-dto';
-import { IRideResponseDto } from '../../interface/ride-reponse-dto';
+import { IBoundRequestDto } from '../../interface/bound-request-dto';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -21,14 +22,25 @@ export class MapboxService {
     return this.http.get<IRide[]>(`${this.API_URL_RIDE}/${uid}`);
   }
 
-  findRides(rideRequestDto: IRideRequestDto): Observable<IRideResponseDto[]> {
-    return this.http.post<IRideResponseDto[]>(
-      `${this.API_URL_RIDE}/find`,
-      rideRequestDto
-    );
+  getAllRides(): Observable<IRideResponseDto[]> {
+    return this.http.get<IRideResponseDto[]>(this.API_URL_RIDE + '/find');
   }
 
   getTimeNow(): string {
     return new Date().toISOString().slice(0, 16);
+  }
+
+  getByBound(
+    bottomLeft: number[],
+    upperRight: number[]
+  ): Observable<IRideResponseDto[]> {
+    const boundRequest = {
+      bottomLeft: bottomLeft,
+      upperRight: upperRight,
+    } as IBoundRequestDto;
+    return this.http.post<IRideResponseDto[]>(
+      this.API_URL_RIDE + '/find-by-bound',
+      boundRequest
+    );
   }
 }

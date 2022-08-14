@@ -12,20 +12,16 @@ const routes: Routes = [
     data: {
       title: `Admin`,
     },
-  },
-  {
-    path: 'user',
-    component: UserComponent,
-    data: {
-      title: `Ride`,
-    },
-  },
-  {
-    path: 'ride',
-    component: RideComponent,
-    data: {
-      title: `Ride`,
-    },
+    children: [
+      {
+        path: 'user',
+        component: UserComponent,
+      },
+      {
+        path: 'ride',
+        component: RideComponent,
+      },
+    ],
   },
 ];
 

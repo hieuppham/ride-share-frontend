@@ -1,19 +1,18 @@
 import { IVehicle } from './vehicle';
-import { FeatureCollection } from 'geojson';
+import { Feature, Point, LineString, GeoJsonProperties } from 'geojson';
+import { EEntityStatus } from './entity-status';
 
 export interface IRide {
   id: string | null;
   uid: string;
+  startPoint: Feature<Point, GeoJsonProperties>;
+  endPoint: Feature<Point, GeoJsonProperties>;
+  path: Feature<LineString, GeoJsonProperties>;
   distance: number;
-  startTime: string;
-  endTime: string;
+  startTime: Date;
+  endTime: Date;
   vehicle: IVehicle;
-  featureCollection: FeatureCollection;
-  criterions: ICriteria[];
-  note: string;
-}
-
-export interface ICriteria {
-  name: string;
-  value: string;
+  criterions: string[];
+  note: string | null;
+  status: EEntityStatus;
 }

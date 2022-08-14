@@ -8,7 +8,7 @@ const MAPBOX_OPTIONS: MapboxOptions = {
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v11',
   center: [105.82006363617364, 21.00317467338734],
-  zoom: 15,
+  zoom: 10,
 };
 
 const GEOCODER_OPT_END_POINT: any = {
@@ -33,4 +33,20 @@ const GEOCODER_OPT_START_POINT: any = {
   mapboxgl: mapboxgl,
 };
 
-export { MAPBOX_OPTIONS, GEOCODER_OPT_END_POINT, GEOCODER_OPT_START_POINT };
+const GEOCODER_OPT_SEARCH: any = {
+  accessToken: environment.mapbox.accessToken,
+  localGeocoder: coordinatesGeocoder,
+  marker: {
+    color: 'blue',
+  },
+  zoom: 18,
+  placeholder: 'Khu vực',
+  mapboxgl: mapboxgl,
+};
+
+export {
+  MAPBOX_OPTIONS,
+  GEOCODER_OPT_END_POINT,
+  GEOCODER_OPT_START_POINT,
+  GEOCODER_OPT_SEARCH,
+};

@@ -12,7 +12,6 @@ import { environment } from 'src/environments/environment';
 import { Router } from '@angular/router';
 import { IUser } from 'src/app/interface/user';
 import { UserService } from '../../../user.service';
-import { EEntityStatus } from 'src/app/interface/entity-status';
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -28,7 +27,7 @@ export class LoginComponent {
   public authGoogle(): void {
     signInWithPopup(this.auth, this.provider)
       .then((result) => {
-        this.userService.saveUser(this.toIUser(result.user)).subscribe({
+        this.userService.upsertUser(this.toIUser(result.user)).subscribe({
           next: (res) => {
             this.router.navigate(['/map'], {
               queryParams: { uid: res.uid },
@@ -44,18 +43,11 @@ export class LoginComponent {
   }
 
   private toIUser(googleUser: User): IUser {
-    const user: IUser = {
-      id: null,
+    return {
       uid: googleUser.uid,
-      gender: null,
-      dob: null,
       photoUrl: googleUser.photoURL,
-      fullName: null,
-      email: googleUser.email,
       phone: googleUser.phoneNumber,
-      vehicles: null,
-      status: EEntityStatus.INACTIVE,
-    };
-    return user;
+      email: googleUser.email,
+    } as IUser;
   }
 }

@@ -11,15 +11,11 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  saveUser(user: IUser): Observable<IUser> {
+  upsertUser(user: IUser): Observable<IUser> {
     return this.http.post<IUser>(this.API_USER_URL, user);
   }
 
   getUserByUID(uid: string): Observable<IUser> {
     return this.http.get<IUser>(`${this.API_USER_URL}/${uid}`);
-  }
-
-  updateUser(user: IUser): Observable<IUser> {
-    return this.http.put<IUser>(this.API_USER_URL, user);
   }
 }

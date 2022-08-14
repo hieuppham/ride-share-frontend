@@ -21,26 +21,23 @@ function getPath(dataPoint: FeatureCollection): GeoJSON.Point {
 }
 
 function calDistance(dataPath: Feature): number {
-  return turf.length(dataPath);
+  return Math.round(turf.length(dataPath) * 100) / 100;
 }
 
 function getStringTimeNow(): string {
   return new Date().toISOString().slice(0, 16);
 }
 
-function getNewPoint(
-  lngLat: mapboxgl.LngLat,
-  title?: string | null
-): GeoJSON.Feature<Point, GeoJsonProperties> {
+function getNewPoint(e: any): GeoJSON.Feature<Point, GeoJsonProperties> {
   return {
     type: 'Feature',
     geometry: {
       type: 'Point',
-      coordinates: [lngLat.lng, lngLat.lat],
+      coordinates: [e.result.center[0], e.result.center[1]],
     },
     properties: {
       id: String(new Date().getTime()),
-      title: title,
+      title: e.result.place_name,
     },
   } as GeoJSON.Feature<Point, GeoJsonProperties>;
 }

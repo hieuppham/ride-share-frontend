@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import * as firebaseui from 'firebaseui';
+// import * as firebaseui from 'firebaseui';
 import {
   GoogleAuthProvider,
   getAuth,
@@ -17,17 +17,17 @@ import { environment } from 'src/environments/environment';
 export class AuthService {
   private app: FirebaseApp = initializeApp(environment.firebaseConfig);
   private auth: Auth = getAuth(this.app);
-  private ui: firebaseui.auth.AuthUI = new firebaseui.auth.AuthUI(this.auth);
+  // private ui: firebaseui.auth.AuthUI = new firebaseui.auth.AuthUI(this.auth);
   private provider: GoogleAuthProvider = new GoogleAuthProvider();
 
   constructor() {
-    this.ui.start('#firebase-auth-container', {
-      signInOptions: [
-        {
-          provider: GoogleAuthProvider.PROVIDER_ID,
-        },
-      ],
-    });
+    // this.ui.start('#firebase-auth-container', {
+    //   signInOptions: [
+    //     {
+    //       provider: GoogleAuthProvider.PROVIDER_ID,
+    //     },
+    //   ],
+    // });
     signInWithPopup(this.auth, this.provider)
       .then((result) => {
         const credential: OAuthCredential | null =

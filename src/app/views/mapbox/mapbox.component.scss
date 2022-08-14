@@ -1,14 +1,23 @@
-:host {
-    min-height: 100%;
-    height: auto;
-}
-#map {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
+
+#main-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    height: 100vh;
 }
 
+#map {
+    min-height: 61%;
+}
+
+.fit-width {
+    min-width: fit-content;
+    width: auto;
+}
+
+#table-container {
+    height: 39%;
+}
 .mapboxgl-popup {
     max-width: 400px;
     font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
@@ -123,10 +132,6 @@ input#distance {
     font-size: 14px;
 }
 
-button#btn-apply {
-    min-width: fit-content;
-}
-
 .green-background-white-text {
     background-color: #00a845;
     color: white;
@@ -162,10 +167,11 @@ button#btn-toggle-profile {
 }
 
 .mapboxgl-ctrl-top-center {
-    position: relative;
-    top: 0;
+    // position: relative;
+    // top: 0;
     display: flex;
     flex-direction: row-reverse;
+    margin-top: -20px;
 }
 
 button#btn-admin-page {
@@ -226,4 +232,13 @@ div.ride-response {
 
 #table-wrapper {
     bottom: 0;
+}
+
+button#btn-toggle-table {
+    margin-bottom: 10px;
+    margin-top: auto;
+}
+
+div#toggle-table-container {
+    display: flex;
 }

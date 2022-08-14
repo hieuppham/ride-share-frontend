@@ -1,4 +1,4 @@
-<!-- <c-row>
+<c-row>
   <c-col xs>
     <c-card class="mb-4">
       <c-card-header>Chuyến</c-card-header>
@@ -7,8 +7,7 @@
           <thead cTableColor="light">
             <tr>
               <th class="text-center">
-                <!-- <svg cIcon name="cilPeople"></svg> -->
-<!-- </th>
+              </th>
               <th class="text-center">Phương tiện</th>
               <th>Xuất phát</th>
               <th>Kết thúc</th>
@@ -35,18 +34,19 @@
               </td>
               <td>
                 <div>
-                  {{ ride.distance + 'km' }}
+                  {{ ride.distance + ' km' }}
                 </div>
               </td>
               <td class="text-center">
                 {{status(ride.status.toString())}}
               </td>
               <td class="text-center">
-                <input id="active-user" type="checkbox">
+                <input id="ride-status" type="checkbox" [checked]="isActive(ride.status)"
+                  (change)="updateStatus(ride._id, $event)">
                 <button
                   class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text">Sửa</button>
-                <button
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input red-background-white-text">Xóa</button>
+                <!-- <button
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input red-background-white-text">Xóa</button> -->
               </td>
 
             </tr>
@@ -55,4 +55,4 @@
       </c-card-body>
     </c-card>
   </c-col>
-</c-row> --> -->
+</c-row>

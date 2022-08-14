@@ -9,12 +9,16 @@ import {
   NavModule,
   BadgeModule,
   DropdownModule,
+  HeaderModule,
+  ButtonModule,
+  BreadcrumbModule,
 } from '@coreui/angular';
+
 import { AdminRoutingModule } from './admin-routing.module';
 import { UserComponent } from './user/user.component';
 import { RideComponent } from './ride/ride.component';
 import { AdminComponent } from './admin.component';
-// import { DefaultHeaderComponent } from '../../containers/default-header/default-header.component';
+import { DefaultHeaderComponent } from './default-header/default-header.component';
 @NgModule({
   imports: [
     CardModule,
@@ -23,16 +27,19 @@ import { AdminComponent } from './admin.component';
     TableModule,
     AdminRoutingModule,
     CommonModule,
+    HeaderModule,
     ModalModule,
     BadgeModule,
     NavModule,
     DropdownModule,
+    ButtonModule,
+    BreadcrumbModule,
   ],
   declarations: [
     UserComponent,
     RideComponent,
     AdminComponent,
-    // DefaultHeaderComponent,
+    DefaultHeaderComponent,
   ],
   bootstrap: [AdminComponent],
 })

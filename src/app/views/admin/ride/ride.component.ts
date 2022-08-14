@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { EEntityStatus } from 'src/app/interface/entity-status';
 import { IRideResponseDto } from 'src/app/interface/ride-reponse-dto';
-import { IRideRequestDto } from 'src/app/interface/ride-request-dto';
 import { AdminService } from '../admin.service';
-
+import { IRequestUpdateStatusDto } from '../../../interface/request-update-status-dto';
 @Component({
   templateUrl: 'ride.component.html',
   styleUrls: ['ride.component.scss'],
@@ -18,7 +17,7 @@ export class RideComponent implements OnInit {
   }
 
   getAllRides(): void {
-    this.adminService.getAllRides({} as IRideRequestDto).subscribe({
+    this.adminService.getAllRides().subscribe({
       next: (res) => {
         this.rideResponseDto = res;
       },
@@ -52,6 +51,26 @@ export class RideComponent implements OnInit {
       }
     }
     return result;
+  }
+
+  isActive(status: EEntityStatus): boolean {
+    return status.toString() === 'ACTIVE';
+  }
+
+  updateStatus(id: string, event: any) {
+    this.adminService
+      .updateRideStatus({
+        id: id,
+        status: event.target.checked
+          ? EEntityStatus.ACTIVE
+          : EEntityStatus.INACTIVE,
+      } as IRequestUpdateStatusDto)
+      .subscribe({
+        next: (res) => {
+          this.getAllRides();
+        },
+        error: (err) => console.error(err),
+      });
   }
 
   public vehicle(type: string): string {

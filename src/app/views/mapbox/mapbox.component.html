@@ -1,77 +1,25 @@
-<div id="map" class="h-100"></div>
-<div id="table-wrapper" class="h-50 w-100">
-    <table id="table_id" class="display stripe hover order-column">
-        <thead>
-            <tr>
-                <th>Avatar</th>
-                <th>Tên</th>
-                <th>Phương tiện</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>link</td>
-                <td>Phạm Trung Hiếu</td>
-                <td>Xe máy</td>
-            </tr>
-            <tr>
-                <td>link</td>
-                <td>Phạm Trung Hiếu</td>
-                <td>Ô tô</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-<!-- search -->
-<div id="custom-filter-search">
-    <input type="number" id="max-distance" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-        placeholder="0.0km" min="0">
-    <input class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl" type="datetime-local"
-        id="time-start-search">
-    <div id="criteria">
-        <div *ngFor="let c of criterionsSearch; let i = index">
-            <div class="criteria-info">
-
-                <select [id]="'name-'+i" [value]="c.name"
-                    class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-                    <option value="genderOwner">Giới tính chủ xe</option>
-                    <option value="gender">Giới tính cho phép</option>
-                    <option value="smoke">Hút thuốc</option>
-                    <object value="talk">Trò chuyện</object>
-                    <option value="package">Mang theo hành lý</option>
-                    <option value="withOthers">Người đi cùng</option>
-                </select>
-
-                <select [id]="'value' + i" [value]="c.value"
-                    class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-                    <option value="male">Nam</option>
-                    <option value="female">Nữ</option>
-                    <option value="yes">Có</option>
-                    <option value="no">Không</option>
-                </select>
-
-                <button class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                    (click)="removeSearchCriteria(i)">-</button>
-            </div>
-        </div>
+<div id="main-container">
+    <div id="map"></div>
+    <div id="table-container" class="w-100">
+        <table id="table_id" class="display stripe hover order-column">
+            <thead>
+                <tr>
+                    <th class="text-center"></th>
+                    <th class="text-center">Phương tiện</th>
+                    <th>Bắt đầu</th>
+                    <th>Kết thúc</th>
+                    <th>Khoảng cách</th>
+                    <th>Tiêu chí</th>
+                </tr>
+            </thead>
+        </table>
     </div>
-    <button (click)="addSearchCriteria()" id="btn-add-criteria"
-        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">Thêm
-        tiêu
-        chí</button>
-    <select id="vehicle-type" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-        <option value="both" selected>Phương tiện</option>
-        <option value="motobike">Xe máy</option>
-        <option value="car">Ô tô</option>
-    </select>
 </div>
-<!-- end search -->
-
 <!-- share form -->
-<form id="form-ride-share" [formGroup]="formShare">
+<form id="form-ride-share" [formGroup]="formShareRide">
     <div>
         <input formControlName="uid" class="d-none">
-        <input formControlName="distance" _ngcontent-ajb-c205="" id="distance-measure-share" type="text" readonly="true"
+        <input formControlName="distance" _ngcontent-ajb-c205="" id="distance-measure-share" type="tet" readonly="true"
             class="distance-container mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
             placeholder="0.0km">
 
@@ -80,38 +28,11 @@
         <input formControlName="endTime" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
             type="datetime-local" id="time-end">
         <select formControlName="vehicle" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-            <option *ngFor="let v of this.user?.vehicles; let i = index" [value]="v.name">{{v.name}}</option>
+            <option *ngFor="let v of this.user?.vehicles; let i = index" [value]="v.name">{{v.name}}
+            </option>
         </select>
-        <div formArrayName="criterions" id="criteria">
-            <div *ngFor="let c of shareCriterions.controls; let i = index">
-                <div class="criteria-info" [formGroupName]="i">
-
-                    <select [id]="'name-'+i" formControlName="name"
-                        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-                        <option value="gender">Giới tính cho phép</option>
-                        <option value="smoke">Hút thuốc</option>
-                        <object value="talk">Trò chuyện</object>
-                        <option value="package">Mang theo hành lý</option>
-                        <option value="withOthers">Người đi cùng</option>
-                    </select>
-
-                    <select [id]="'value' + i" formControlName="value"
-                        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-                        <option value="male">Nam</option>
-                        <option value="female">Nữ</option>
-                        <option value="yes">Có</option>
-                        <option value="no">Không</option>
-                    </select>
-
-                    <button class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                        (click)="removeCriteria(i)">-</button>
-                </div>
-            </div>
-        </div>
-        <button (click)="addCriteria()" id="btn-add-criteria"
-            class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">Thêm
-            tiêu
-            chí</button>
+        <input formControlName="criterions" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+            type="text" id="criterions" placeholder="Tiêu chí">
         <div id="text-share-wrapper" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
             <textarea formControlName="note" id="note" cols="27" rows="5" placeholder="Ghi chú"></textarea>
         </div>
@@ -124,7 +45,6 @@
 
 <!-- modal confirm -->
 <c-modal #shareConfirmModal alignment="center" id="shareConfirmModal" [visible]="false">
-
     <c-modal-header>
         <h5 cModalTitle>Chia sẻ chuyến đi này?<b>
             </b></h5>
@@ -137,13 +57,11 @@
                 cButton type="button" [cModalToggle]="shareConfirmModal.id">Hủy</button>
             <button
                 class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-                cButton type="button" [cModalToggle]="notifyAddRideModal.id" (click)="onSubmitFormShare()">Chia sẻ
+                cButton type="button" [cModalToggle]="notifyAddRideModal.id" (click)="onSubmitFormShare()">Chia
+                sẻ
             </button>
         </div>
     </c-modal-footer>
-
-
-
 </c-modal>
 <!-- end modal confirm -->
 
@@ -170,7 +88,7 @@
     Chuyến của tôi
 </button>
 
-<c-modal #showMyRidesModal alignment="center" id="showMyRidesModal" [visible]="false">
+<c-modal #showMyRidesModal alignment="center" id="showMyRidesModal" [visible]="false" scrollable>
     <c-modal-header>
         <h5 cModalTitle>Danh sách chuyến đi</h5>
         <button [cModalToggle]="showMyRidesModal.id"
@@ -178,18 +96,20 @@
             Đóng</button>
     </c-modal-header>
     <c-modal-body>
-        <div *ngFor="let ride of rideUser; let i = index" class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-            <p>Bắt đầu: <b>{{ride.startTime}}</b></p>
-            <p>Kết thúc: <b>{{ride.endTime}}</b></p>
-            <p>Khoảng cách: <b>{{ride.distance}}km</b></p>
-            <p>Phương tiện: <b>{{ride.vehicle.name}}</b></p>
-        </div>
+        <ng-container *ngFor="let ride of rideUser; let i = index">
+            <div class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+                <p>Bắt đầu: <b>{{ride.startTime}}</b></p>
+                <p>Kết thúc: <b>{{ride.endTime}}</b></p>
+                <p>Khoảng cách: <b>{{ride.distance}}km</b></p>
+                <p>Phương tiện: <b>{{ride.vehicle.name}}</b></p>
+            </div>
+        </ng-container>
     </c-modal-body>
 </c-modal>
 <!-- end show my ride -->
 
 <div class="mapboxgl-ctrl-top-center">
-    <button id="btn-toggle-profile" [cModalToggle]="verticallyCenteredModal.id" cButton class="py-0 nav-link btn"
+    <button id="btn-toggle-profile" [cModalToggle]="userInfoModal.id" cButton class="py-0 nav-link btn"
         ng-reflect-caret="false">
         <c-avatar ctextcolor="primary" shape="rounded-1" size="md" src="{{this.user?.photoUrl}}"
             class="avatar avatar-md rounded-1 text-primary">
@@ -201,12 +121,48 @@
     </button>
 </div>
 
+<c-modal #rideInfoModal alignment="center" id="rideInfoModal" [visible]="rideInfoModalVisible">
+    <c-modal-header>
+        <h5 cModalTitle>Thông tin chuyến đi</h5>
+        <button [cModalToggle]="rideInfoModal.id" id="btn-close-modal"
+            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" cButton>
+            Đóng
+        </button>
+    </c-modal-header>
+    <c-modal-body>
+        <h1>{{vehicle(chosenRide?.vehicle?.type!)}}</h1>
+        <p>Khoảng cách: <b>{{chosenRide?.distance}} km</b></p>
+        <p>Bắt đầu: <b>{{chosenRide?.startTime}}</b> - Kết thúc: <b>{{chosenRide?.endTime}}</b></p>
+        <p>Phương tiện:
+            <b>{{vehicle(chosenRide?.vehicle?.type!)}}</b> -
+            <b>{{chosenRide?.vehicle?.name}}</b> -
+            <b>{{chosenRide?.vehicle?.licensePlateNumber}}</b>
+        </p>
+        <p>Yêu cầu: <b>{{chosenRide?.criterions}}</b></p>
+        <hr>
+        <p>Chủ xe: <b>{{chosenRide?.user?.fullName}}</b></p>
+        <p>Số điện thoại: <b>{{chosenRide?.user?.phone}}</b> </p>
+        <p>Giới tính: <b>{{gender(chosenRide?.user?.gender!)}}</b> </p>
+        <hr>
+        <p>Ghi chú: </p>
+        <span>{{chosenRide?.note}}</span>
+    </c-modal-body>
+    <c-modal-footer>
+        <div class="modal-footer">
+            <button
+                class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
+                cButton [cModalToggle]="rideInfoModal.id">Liên hệ chủ xe</button>
+        </div>
+    </c-modal-footer>
 
-<c-modal #verticallyCenteredModal alignment="center" id="verticallyCenteredModal" [visible]="false">
+</c-modal>
+
+
+<c-modal #userInfoModal alignment="center" id="userInfoModal" [visible]="false">
     <c-modal-header>
         <h5 cModalTitle>Thông tin người dùng</h5>
-        <button [cModalToggle]="verticallyCenteredModal.id" id="btn-close-modal"
-            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input " cButton>
+        <button [cModalToggle]="userInfoModal.id" id="btn-close-modal"
+            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" cButton>
             Đóng
         </button>
     </c-modal-header>
@@ -218,24 +174,30 @@
                 </c-avatar>
 
                 <input formControlName="uid" type="hidden">
+
                 <input formControlName="fullName" id="full-name" type="text"
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" placeholder="Tên đầy đủ"
                     required>
+
                 <input formControlName="dob" id="dob" type="date"
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" placeholder="Ngày sinh"
                     required>
+
                 <select formControlName="gender" id="gender"
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input">
                     <option value="both" selected>Giới tính</option>
                     <option value="female">Nữ</option>
                     <option value="male">Nam</option>
                 </select>
+
                 <input formControlName="phone" id="phone" type="text"
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
                     placeholder="Số điện thoại" required>
+
                 <input formControlName="email" id="email" type="text"
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input" placeholder="Email"
                     readonly>
+
                 <div formArrayName="vehicles" id="vehicles">
                     <div *ngFor="let v of vehicles.controls; let i = index">
                         <div class="vehicle-info" [formGroupName]="i">
@@ -263,67 +225,19 @@
             <div class="modal-footer">
                 <button
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-                    cButton (click)="onSubmitFormUserInfo()" [cModalToggle]="verticallyCenteredModal.id">Cập
+                    cButton [cModalToggle]="userInfoModal.id" (click)="onSubmitFormUserInfo()">Cập
                     nhật thông tin</button>
                 <button
                     class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-                    cButton type="button" [cModalToggle]="verticallyCenteredModal.id">Đăng xuất
+                    cButton type="button" [cModalToggle]="userInfoModal.id">Đăng xuất
                 </button>
             </div>
         </c-modal-footer>
     </form>
 </c-modal>
 
-<div id="popup-click">
-    <button id="btn-apply"
-        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-        type="button">Chọn
-        điểm này</button>
-</div>
-
-<div class="mapboxgl-ctrl-mid-right">
-    <div class="ride-response mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-        *ngFor="let ride of rideResponse; let i = index" [cModalToggle]="rideInfoModal.id" cButton
-        (click)="showRide(ride._id)">
-        <h5>{{ride.user.fullName}}</h5>
-        <p>{{vehicle(ride.vehicle.type)}}</p>
-        <p>{{ride.vehicle.licensePlateNumber}}</p>
-    </div>
-
-    <c-modal #rideInfoModal alignment="center" id="ride-info" [visible]="false">
-        <c-modal-header>
-            <h5 cModalTitle>Thông tin chuyến đi</h5>
-            <button [cModalToggle]="rideInfoModal.id" id="btn-close-modal"
-                class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input " cButton>
-                Đóng
-            </button>
-        </c-modal-header>
-        <c-modal-body>
-            <!-- <h4>{{rideShow?.startPoint?.coordinates}} -> {{rideShow?.endPoint?.coordinates}}</h4> -->
-            <p>Bắt đầu: <b>{{rideShow?.startTime}}</b></p>
-            <p>Kết thúc: <b>{{rideShow?.endTime}}</b></p>
-            <p>Loại phương tiện: <b>{{vehicle(rideShow?.vehicle?.type!)}}</b></p>
-            <p>Tên phương tiện <b>{{rideShow?.vehicle?.name}}</b></p>
-            <p>Biển số: <b>{{rideShow?.vehicle?.licensePlateNumber}}</b></p>
-            <p>Chủ xe: <b>{{rideShow?.user?.fullName}}</b></p>
-            <p>Giới tính: <b>{{gender(rideShow?.user?.gender!)}}</b></p>
-            <p>Số điện thại: <a href=""><b>{{rideShow?.user?.phone}}</b></a></p>
-            <p>Email: <a href="{{'https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=' + rideShow?.user?.email}}"
-                    target="_blank"><b>{{rideShow?.user?.email}}</b></a>
-            </p>
-            <p>Ghi chú: <b>{{rideShow?.note}}</b></p>
-
-        </c-modal-body>
-        <c-modal-footer>
-            <div class="modal-footer">
-                <button
-                    class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-                    cButton>Liên hệ chủ xe</button>
-                <!-- <button
-                    class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-                    cButton type="button" [cModalToggle]="rideInfoModal.id">Đăng xuất
-                </button> -->
-            </div>
-        </c-modal-footer>
-    </c-modal>
+<div id="toggle-table-container">
+    <button id="btn-toggle-table" title="Ctrl + X"
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+        type="button" (click)="toggleDataTable()">Danh sách chuyến</button>
 </div>

@@ -41,7 +41,7 @@ function initView(mapBoxComponent: MapboxComponent): void {
     )[0] as HTMLDivElement
   ).remove();
   mapBoxComponent.divButtonApplyWrapper = document.getElementById(
-    'popup-click'
+    'toggle-table-container'
   ) as HTMLDivElement;
 
   mapBoxComponent.ctrlBottomRight.style.display = 'flex';
@@ -51,7 +51,7 @@ function initView(mapBoxComponent: MapboxComponent): void {
   mapBoxComponent.divButtonApplyWrapper.style.background = 'none';
 
   mapBoxComponent.buttonApplyPoint = document.getElementById(
-    'btn-apply'
+    'btn-toggle-table'
   ) as HTMLButtonElement;
 }
 

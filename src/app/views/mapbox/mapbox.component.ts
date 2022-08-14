@@ -3,9 +3,15 @@ import { IRideResponseDto } from '../../interface/ride-reponse-dto';
 import { DatePipe } from '@angular/common';
 import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Map } from 'mapbox-gl';
+import { Map, EventData, MapboxEvent, LineLayer } from 'mapbox-gl';
 import * as MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-import { Marker, MapMouseEvent, GeoJSONSource, LngLat } from 'mapbox-gl';
+import {
+  Marker,
+  MapMouseEvent,
+  GeoJSONSource,
+  LngLat,
+  GeoJSONSourceRaw,
+} from 'mapbox-gl';
 
 import { MapboxService } from './mapbox.service';
 import { ActivatedRoute } from '@angular/router';
@@ -20,7 +26,7 @@ import {
 import { IUser } from 'src/app/interface/user';
 import { UserService } from 'src/app/user.service';
 import { IRideRequestDto } from 'src/app/interface/ride-request-dto';
-import { ICriteria, IRide } from 'src/app/interface/ride';
+import { IRide } from 'src/app/interface/ride';
 
 import {
   getStartPoint,
@@ -35,14 +41,15 @@ import {
 
 import {
   GEOCODER_OPT_END_POINT,
+  GEOCODER_OPT_SEARCH,
   GEOCODER_OPT_START_POINT,
   MAPBOX_OPTIONS,
 } from './util/geojson.constant';
 
 import { initView } from './util/view.config';
-import { EEntityStatus } from 'src/app/interface/entity-status';
 import $ from 'jquery';
 import 'datatables.net';
+import { lineOffset } from '@turf/turf';
 
 @Component({
   selector: 'app-mapbox',
@@ -60,18 +67,28 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.loadMap();
+    this.loadRidesByBound();
   }
 
+  private dataTable: any = null;
+
   ngAfterViewInit(): void {
-    $(() => {
-      $('#table_id').DataTable();
-    });
+    this.loadDataTable();
     initView(this);
     this.loadTopLeft();
     this.loadBottomLeft();
     this.loadUserInfo();
-    this.switchToSearchMode();
   }
+
+  public vehicle(type: string): string {
+    return type === 'motobike' ? 'Xe máy' : 'Ô tô';
+  }
+
+  public avatar(url: string): string {
+    return `<img class="rounded-circle" src="${url}" width="40" height="40">`;
+  }
+
+  public ridesInBound: IRideResponseDto[] = [];
 
   public rideResponse: IRideResponseDto[] = [];
 
@@ -96,7 +113,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     },
   };
 
-  user: IUser | undefined;
+  user!: IUser;
   rideUser: IRide[] = [];
 
   formUserInfo: FormGroup = new FormGroup({
@@ -111,10 +128,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   get vehicles(): FormArray {
     return this.formUserInfo.get('vehicles') as FormArray;
-  }
-
-  get shareCriterions(): FormArray {
-    return this.formShare.get('criterions') as FormArray;
   }
 
   rideShow: IRideResponseDto | undefined;
@@ -132,27 +145,11 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   buttonAdminPage!: HTMLButtonElement;
   buttonToggleSearch!: HTMLButtonElement;
   divSearch!: HTMLDivElement;
-  avatar!: HTMLButtonElement;
+  // avatar!: HTMLButtonElement;
   buttonToggleProfile!: HTMLButtonElement;
   divButtonApplyWrapper!: HTMLDivElement;
   buttonApplyPoint!: HTMLButtonElement;
   inputDistance!: HTMLInputElement;
-
-  // search
-  inputStartSearch!: HTMLInputElement;
-  inputEndSearch!: HTMLInputElement;
-  inputMaxDistanceSearch!: HTMLInputElement;
-  inputTimeStartSearch!: HTMLInputElement;
-  selectGenderOwner!: HTMLSelectElement;
-  selectGenderAllow!: HTMLSelectElement;
-  selectVehicleType!: HTMLSelectElement;
-  markerSearchStart: Marker | undefined;
-  markerSearchEnd: Marker | undefined;
-  currentEndPointSearch: GeoJSON.Feature<Point, GeoJsonProperties> | undefined;
-  currentStartPointSearch:
-    | GeoJSON.Feature<Point, GeoJsonProperties>
-    | undefined;
-  // end search
 
   // form share
   formShareWrapper!: HTMLFormElement;
@@ -171,7 +168,10 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   buttonShowMyRides!: HTMLButtonElement;
   // end form share
 
-  formShare: FormGroup = new FormGroup({
+  rideInfoModalVisible: boolean = false;
+  chosenRide: IRideResponseDto | undefined;
+
+  formShareRide: FormGroup = new FormGroup({
     uid: new FormControl(''),
     distance: new FormControl(0),
     startTime: new FormControl(''),
@@ -180,28 +180,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     endPoint: new FormControl(''),
     path: new FormControl(''),
     vehicle: new FormControl(''),
-    criterions: new FormArray([]),
+    criterions: new FormControl(''),
     note: new FormControl(''),
   });
-
-  private defaultPoint: Feature<Point, GeoJsonProperties> = getNewPoint(
-    new LngLat(105.82014860766915, 21.00304388986788)
-  );
-  private startPointSearch: Feature<Point, GeoJsonProperties> =
-    this.defaultPoint;
-  private endPointSearch: Feature<Point, GeoJsonProperties> = this.defaultPoint;
-  private maxDistanceSearch: number = 1000;
-  private startTimeSearch: string = getStringTimeNow();
-  criterionsSearch: ICriteria[] = [];
-  private vehicleTypeSearch: string = 'both';
-
-  addSearchCriteria(): void {
-    this.criterionsSearch.push({ name: '', value: '' });
-  }
-
-  removeSearchCriteria(index: number) {
-    this.criterionsSearch.splice(index, 1);
-  }
 
   addVehicle(): void {
     this.vehicles.push(
@@ -217,22 +198,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.vehicles.removeAt(index);
   }
 
-  addCriteria(): void {
-    this.shareCriterions.push(
-      new FormGroup({
-        name: new FormControl(''),
-        value: new FormControl(''),
-      })
-    );
-  }
-
-  removeCriteria(index: number): void {
-    this.shareCriterions.removeAt(index);
-  }
-
   onSubmitFormUserInfo(): void {
-    this.formUserInfo.value['uid'] = this.user!.uid;
-    this.userService.updateUser(this.formUserInfo.value).subscribe({
+    this.formUserInfo.value['uid'] = this.user.uid;
+    this.userService.upsertUser(this.formUserInfo.value).subscribe({
       next: (res) => {
         this.user = res;
       },
@@ -241,26 +209,31 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   }
 
   onSubmitFormShare(): void {
-    this.formShare.patchValue({
-      uid: this.user?.uid,
-      startPoint: getStartPoint(this.dataPointShare),
-      endPoint: getEndPoint(this.dataPointShare),
-      path: getPath(this.dataPointShare),
+    this.formShareRide.patchValue({
+      uid: this.user.uid,
+      startPoint: this.currentStartPointShare,
+      endPoint: this.currentEndPointShare,
+      path: this.dataPathShare,
       distance: parseFloat(
         this.inputDistanceMeasureShare.value.replace('km', '')
       ),
     });
-
-    this.formShare.value['vehicle'] = this.user?.vehicles?.filter(
-      (v) => v.name == this.formShare.value['vehicle']
+    this.formShareRide.value['vehicle'] = this.user?.vehicles?.filter(
+      (v) => v.name == this.formShareRide.value['vehicle']
     )[0];
+    this.formShareRide.value['criterions'] = (
+      this.formShareRide.value['criterions'] as string
+    )
+      .split(',')
+      .map((c) => c.trim());
 
-    this.mapboxService.createRide(this.formShare.value).subscribe({
+    this.mapboxService.createRide(this.formShareRide.value).subscribe({
       next: (res) => {
         this.loadAllRides();
       },
       error: (err) => console.error(err),
     });
+    this.formShareRide.reset();
     this.toggleFormShare();
   }
 
@@ -305,33 +278,21 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     });
   }
 
-  public showRide(id: string) {
-    for (let ride of this.rideResponse) {
-      if (ride._id == id) {
-        this.rideShow = ride;
-      }
-    }
-  }
-
-  public vehicle(type: string): string {
-    return type === 'motobike' ? 'Xe máy' : 'Ô tô';
-  }
-
   public gender(gender: string): string {
     return gender === 'female' ? 'Nữ' : 'male' ? 'Nam' : 'Cả nam và nữ';
   }
 
-  private loadMap(): void {
-    const map: Map = new Map(MAPBOX_OPTIONS);
-    this.mapRef = map;
-    map.on('load', () => {
-      map.addSource('geojson', {
+  loadMap(): void {
+    this.mapRef = new Map(MAPBOX_OPTIONS);
+    this.mapRef.on('load', (e: MapboxEvent<undefined> & EventData) => {
+      this.loadAllRides();
+      this.mapRef.addSource('geojson', {
         type: 'geojson',
         data: this.dataPointShare,
-      });
+      } as GeoJSONSourceRaw);
 
-      map.addLayer({
-        id: 'measure-points',
+      this.mapRef.addLayer({
+        id: 'share-points',
         type: 'circle',
         source: 'geojson',
         paint: {
@@ -341,8 +302,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         filter: ['in', '$type', 'Point'],
       });
 
-      map.addLayer({
-        id: 'measure-lines',
+      this.mapRef.addLayer({
+        id: 'share-line',
         type: 'line',
         source: 'geojson',
         layout: {
@@ -351,157 +312,243 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         },
         paint: {
           'line-color': '#000',
-          'line-width': 4,
+          'line-width': 3,
         },
         filter: ['in', '$type', 'LineString'],
       });
-
-      this.loadAllRides();
     });
 
-    map.on('mousemove', (e: MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ['measure-points'],
+    this.mapRef.on(
+      'moveend',
+      (
+        e: MapboxEvent<MouseEvent | TouchEvent | WheelEvent | undefined> &
+          EventData
+      ) => {
+        this.loadRidesByBound();
+      }
+    );
+
+    this.mapRef.on('mousemove', (e: MapMouseEvent) => {
+      const features = this.mapRef.queryRenderedFeatures(e.point, {
+        layers: ['share-points', 'share-line'],
       });
-      map.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair';
+
+      this.mapRef.getCanvas().style.cursor = features.length
+        ? 'pointer'
+        : 'crosshair';
     });
 
-    map.on('mousemove', (e: MapMouseEvent) => {
-      const feature = map.queryRenderedFeatures(e.point, {
-        layers: ['measure-lines'],
+    this.mapRef.on('click', (e: MapMouseEvent) => {
+      const features = this.mapRef.queryRenderedFeatures(e.point, {
+        layers: ['share-points'],
       });
-      map.getCanvas().style.cursor = feature.length ? 'pointer' : 'crosshair';
+
+      if (features.length > 0) {
+        this.removeSharePoint(features[0] as Feature<Point, GeoJsonProperties>);
+      } else {
+        this.addSharePoint(e);
+      }
     });
   }
 
-  private loadAllRides(): void {
+  addSharePoint(e: MapMouseEvent): void {
+    const _line = this.dataPointShare.features.pop();
+    const _end = this.dataPointShare.features.pop();
+
+    this.dataPointShare.features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] },
+      properties: {
+        id: String(new Date().getTime()),
+      },
+    } as Feature<Point, GeoJsonProperties>);
+
+    this.dataPointShare.features.push(_end!);
+    this.dataPointShare.features.push(_line!);
+    (this.dataPathShare.geometry as LineString).coordinates =
+      this.dataPointShare.features.map(
+        (point) => (point.geometry as Point).coordinates
+      );
+    this.dataPointShare.features.push(this.dataPathShare);
+    (this.mapRef.getSource('geojson') as GeoJSONSource).setData(
+      this.dataPointShare
+    );
+  }
+
+  removeSharePoint(feature: Feature<Point, GeoJsonProperties>): void {
+    this.dataPointShare.features = this.dataPointShare.features.filter(
+      (f) => f != feature
+    );
+    (this.dataPathShare.geometry as LineString).coordinates =
+      this.dataPointShare.features.map(
+        (point) => (point.geometry as Point).coordinates
+      );
+    this.dataPointShare.features.push(this.dataPathShare);
+    (this.mapRef.getSource('geojson') as GeoJSONSource).setData(
+      this.dataPointShare
+    );
+  }
+
+  loadDataTable(): void {
+    $(() => {
+      this.dataTable = $('#table_id').DataTable({
+        autoWidth: true,
+        scrollCollapse: true,
+        info: false,
+        lengthChange: false,
+        pageLength: 5,
+        jQueryUI: true,
+        searching: false,
+        pagingType: 'simple',
+        scrollY: '285px',
+        data: this.ridesInBound,
+        language: {
+          paginate: {
+            first: 'Đầu',
+            last: 'Cuối',
+            next: 'Kế',
+            previous: 'Trước',
+          },
+          zeroRecords: 'Không tìm được chuyến',
+          // info: 'fádfs- _PAGE_ of _PAGES_',
+          // infoPostFix: 'fád-',
+          // infoFiltered: 'fasdf-',
+          // infoEmpty: 'fsadf-',
+        },
+        columns: [
+          {
+            data: 'user.photoUrl',
+            className: 'text-center',
+            render: (data, type, row, meta) => {
+              return this.avatar(data);
+            },
+            orderable: false,
+          },
+          {
+            data: 'vehicle.type',
+            className: 'text-center',
+            render: (data, type, row, meta) => {
+              return this.vehicle(data);
+            },
+          },
+          {
+            data: 'startTime',
+          },
+          { data: 'endTime' },
+          {
+            data: 'distance',
+            render: (data, type, row, meta) => {
+              return `${data} km`;
+            },
+          },
+          { data: 'criterions', searchable: true },
+        ],
+      });
+
+      $('#table_id tbody').on('click', 'tr', (target: any) => {
+        this.chosenRide = this.ridesInBound[target.currentTarget._DT_RowIndex];
+        console.log(this.chosenRide);
+
+        this.rideInfoModalVisible = !this.rideInfoModalVisible;
+      });
+
+      // set canvas w-100
+      $('canvas.mapboxgl-canvas').addClass('w-100');
+
+      $(document).on('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key == 'x') {
+          this.toggleDataTable();
+        }
+      });
+    });
+  }
+
+  showRideInfo(): void {}
+
+  loadRidesByBound(): void {
     this.mapboxService
-      .findRides({ status: EEntityStatus.ACTIVE } as IRideRequestDto)
+      .getByBound(
+        this.mapRef.getBounds().getSouthWest().toArray(),
+        this.mapRef.getBounds().getNorthEast().toArray()
+      )
       .subscribe({
         next: (res) => {
-          for (let rideResponseDto of res) {
-            this.mapRef.addSource(`${rideResponseDto._id}-line`, {
-              type: 'geojson',
-              data: toFeature(rideResponseDto.path),
-            });
-
-            this.mapRef.addSource(`${rideResponseDto._id}-start-point`, {
-              type: 'geojson',
-              data: toFeature(rideResponseDto.startPoint),
-            });
-
-            this.mapRef.addSource(`${rideResponseDto._id}-end-point`, {
-              type: 'geojson',
-              data: toFeature(rideResponseDto.endPoint),
-            });
-
-            this.mapRef.addLayer({
-              id: `${rideResponseDto._id}-line`,
-              type: 'line',
-              source: `${rideResponseDto._id}-line`,
-              layout: {
-                'line-cap': 'round',
-                'line-join': 'round',
-              },
-              paint: {
-                'line-color': '#3179c0',
-                'line-width': 5,
-              },
-              filter: ['in', '$type', 'LineString'],
-            });
-
-            this.mapRef.addLayer({
-              id: `${rideResponseDto._id}-start-point`,
-              type: 'circle',
-              source: `${rideResponseDto._id}-start-point`,
-              paint: {
-                'circle-radius': 7,
-                'circle-color': '#008200',
-              },
-              filter: ['in', '$type', 'Point'],
-            });
-
-            this.mapRef.addLayer({
-              id: `${rideResponseDto._id}-end-point`,
-              type: 'circle',
-              source: `${rideResponseDto._id}-end-point`,
-              paint: {
-                'circle-radius': 7,
-                'circle-color': '#ff0000',
-              },
-              filter: ['in', '$type', 'Point'],
-            });
-          }
+          this.ridesInBound = res;
+          this.updateDataTable(res);
         },
-        error: (err) => console.error(err),
-        complete: () => console.log('load rides done'),
+        error: (err) => alert(err),
       });
+  }
+
+  updateDataTable(data: any): void {
+    this.dataTable?.clear();
+    this.dataTable.rows.add(data).draw();
+  }
+
+  loadAllRides(): void {
+    this.mapboxService.getAllRides().subscribe({
+      next: (res) => {
+        for (let rideResponseDto of res) {
+          this.mapRef.addSource(`${rideResponseDto._id}-line`, {
+            type: 'geojson',
+            data: rideResponseDto.path,
+          });
+
+          this.mapRef.addSource(`${rideResponseDto._id}-start-point`, {
+            type: 'geojson',
+            data: rideResponseDto.startPoint,
+          });
+
+          this.mapRef.addSource(`${rideResponseDto._id}-end-point`, {
+            type: 'geojson',
+            data: rideResponseDto.endPoint,
+          });
+
+          this.mapRef.addLayer({
+            id: `${rideResponseDto._id}-line`,
+            type: 'line',
+            source: `${rideResponseDto._id}-line`,
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
+            },
+            paint: {
+              'line-color': '#3179c0',
+              'line-width': 5,
+            },
+            filter: ['in', '$type', 'LineString'],
+          });
+
+          this.mapRef.addLayer({
+            id: `${rideResponseDto._id}-start-point`,
+            type: 'circle',
+            source: `${rideResponseDto._id}-start-point`,
+            paint: {
+              'circle-radius': 7,
+              'circle-color': '#008200',
+            },
+            filter: ['in', '$type', 'Point'],
+          });
+
+          this.mapRef.addLayer({
+            id: `${rideResponseDto._id}-end-point`,
+            type: 'circle',
+            source: `${rideResponseDto._id}-end-point`,
+            paint: {
+              'circle-radius': 7,
+              'circle-color': '#ff0000',
+            },
+            filter: ['in', '$type', 'Point'],
+          });
+        }
+      },
+      error: (err) => console.error(err),
+      complete: () => console.log('load rides done'),
+    });
   }
 
   private loadTopLeft(): void {
-    this.mapRef.addControl(
-      new MapboxGeocoder(GEOCODER_OPT_START_POINT).on('result', (e) => {
-        this.startPointSearch = getNewPoint(
-          new LngLat(e.result.center[0], e.result.center[1]),
-          e.result.place_name
-        );
-        this.findRides();
-      }),
-      'top-left'
-    );
-    this.mapRef.addControl(
-      new MapboxGeocoder(GEOCODER_OPT_END_POINT).on('result', (e) => {
-        this.endPointSearch = getNewPoint(
-          new LngLat(e.result.center[0], e.result.center[1]),
-          e.result.place_name
-        );
-        this.findRides();
-      }),
-      'top-left'
-    );
-    this.ctrlTopLeft.append(
-      document.getElementById('custom-filter-search') as HTMLDivElement
-    );
-
-    this.inputStartSearch = this.ctrlTopLeft.getElementsByTagName(
-      'input'
-    )[0] as HTMLInputElement;
-    this.inputStartSearch.onchange = () => {
-      this.findRides();
-    };
-
-    this.inputEndSearch = this.ctrlTopLeft.getElementsByTagName(
-      'input'
-    )[1] as HTMLInputElement;
-    this.inputEndSearch.onchange = () => {
-      this.findRides();
-    };
-
-    this.inputMaxDistanceSearch = document.getElementById(
-      'max-distance'
-    ) as HTMLInputElement;
-    this.inputMaxDistanceSearch.onchange = () => {
-      this.maxDistanceSearch = parseFloat(this.inputMaxDistanceSearch.value);
-      this.findRides();
-    };
-
-    this.inputTimeStartSearch = document.getElementById(
-      'time-start-search'
-    ) as HTMLInputElement;
-    this.inputTimeStartSearch.onchange = () => {
-      this.startTimeSearch = this.inputTimeStartSearch.value;
-      this.findRides();
-    };
-
-    // criteria
-
-    this.selectVehicleType = document.getElementById(
-      'vehicle-type'
-    ) as HTMLSelectElement;
-    this.selectVehicleType.onchange = () => {
-      this.vehicleTypeSearch = this.selectVehicleType.value;
-      this.findRides();
-    };
+    this.mapRef.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
   }
 
   private loadBottomLeft(): void {
@@ -518,13 +565,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     //start
     this.mapRef.addControl(
       new MapboxGeocoder(GEOCODER_OPT_START_POINT).on('result', (e) => {
-        this.currentChosenPoint = getNewPoint(
-          {
-            lng: e.result.center[0],
-            lat: e.result.center[1],
-          } as LngLat,
-          e.result.place_name
-        );
+        this.currentChosenPoint = getNewPoint(e);
         this.currentStartPointShare = this.currentChosenPoint;
         this.markerShareStart = this.newStartMarker(
           this.markerShareStart,
@@ -541,13 +582,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     // end
     this.mapRef.addControl(
       new MapboxGeocoder(GEOCODER_OPT_END_POINT).on('result', (e) => {
-        this.currentChosenPoint = getNewPoint(
-          {
-            lng: e.result.center[0],
-            lat: e.result.center[1],
-          } as LngLat,
-          e.result.place_name
-        );
+        this.currentChosenPoint = getNewPoint(e);
         this.currentEndPointShare = this.currentChosenPoint;
         this.markerShareEnd = this.newEndMarker(
           this.markerShareEnd,
@@ -590,10 +625,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   toggleFormShare(): void {
     if (this.formShareWrapper.style.display == 'block') {
       this.formShareWrapper.style.display = 'none';
-      this.switchToSearchMode();
     } else {
       this.formShareWrapper.style.display = 'block';
-      this.switchToShareMode();
     }
   }
 
@@ -605,121 +638,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private switchToSearchMode(): void {
-    // this.mapRef.on('click', (e: MapMouseEvent & EventData) => {
-    //   this.currentChosenPoint = this.newPoint(e.lngLat, null);
-    //   if (!this.currentStartPointSearch) {
-    //     if (this.markerSearchStart) {
-    //       this.markerSearchStart.remove();
-    //     }
-    //     this.markerSearchStart = this.newStartMarker(
-    //       this.markerSearchStart,
-    //       this.currentChosenPoint,
-    //       'search'
-    //     );
-    //     this.inputStartSearch.value = `${e.lngLat.lat} ${e.lngLat.lng}`;
-    //     this.displayButtonApply();
-    //     this.buttonApplyPoint.onclick = () => {
-    //       this.currentStartPointSearch = this.currentChosenPoint;
-    //       this.hidenButtonApply();
-    //     };
-    //   } else if (!this.currentEndPointSearch) {
-    //     if (this.markerSearchEnd) {
-    //       this.markerSearchEnd.remove();
-    //     }
-    //     this.markerSearchEnd = this.newEndMarker(
-    //       this.markerSearchEnd,
-    //       this.currentChosenPoint,
-    //       'search'
-    //     );
-    //     this.inputEndSearch.value = `${e.lngLat.lat} ${e.lngLat.lng}`;
-    //     this.displayButtonApply();
-    //     this.buttonApplyPoint.onclick = () => {
-    //       this.currentEndPointSearch = this.currentChosenPoint;
-    //       this.hidenButtonApply();
-    //     };
-    //   }
-    // });
-  }
-
-  private switchToShareMode(): void {
-    // this.mapRef.on('click', (e: MapMouseEvent & EventData) => {
-    //   this.currentChosenPoint = this.newPoint(
-    //     e.lngLat,
-    //     `[${e.lngLat.lng} ${e.lngLat.lat}]`
-    //   );
-    //   this.drawLineString(e);
-    // });
-  }
-
-  private findRides(): void {
-    const rideRequestDto: IRideRequestDto = {
-      startCoordinates: pointToCoordinates(this.startPointSearch),
-      endCoordinates: pointToCoordinates(this.endPointSearch),
-      maxDistance: this.maxDistanceSearch,
-      startTime: this.startTimeSearch,
-      criterions: this.criterionsSearch,
-      vehicleType: this.vehicleTypeSearch,
-      status: EEntityStatus.ACTIVE,
-    };
-    this.mapboxService.findRides(rideRequestDto).subscribe({
-      next: (res) => {
-        this.rideResponse = res;
-      },
-      error: (err) => console.error(err),
-    });
-  }
-
-  // private drawLineString(e: MapMouseEvent & EventData): void {
-  //   const features = this.mapRef.queryRenderedFeatures(e.point, {
-  //     layers: ['measure-points'],
-  //   });
-
-  //   const _linestring = this.geojson.features.pop();
-
-  //   // If a feature was clicked, remove it from the map.
-  //   if (features.length) {
-  //     const _start = this.geojson.features.shift();
-  //     const _end = this.geojson.features.pop();
-  //     const _id = features[0].properties!['id'];
-  //     this.geojson.features = this.geojson.features.filter(
-  //       (point) => point.properties!['id'] != _id
-  //     );
-  //     this.geojson.features.unshift(_start!);
-  //     this.geojson.features.push(_end!);
-  //   } else {
-  //     const _last = this.geojson.features.pop();
-  //     this.geojson.features.push(this.currentChosenPoint!);
-  //     this.geojson.features.push(_last!);
-  //   }
-
-  //   // Push linestring
-  //   if (this.geojson.features.length > 1) {
-  //     (this.linestring.geometry as LineString).coordinates =
-  //       this.geojson.features.map(
-  //         (point) => (point.geometry as Point).coordinates
-  //       );
-  //     this.geojson.features.push(this.linestring);
-  //     // this.inputDistanceMeasureShare.value = `${turf.length(
-  //     //   this.linestring
-  //     // )}km`;
-  //     // this.formShare.value['distance'] = this.inputDistanceMeasureShare.value;
-  //   }
-  //   (this.mapRef.getSource('geojson') as GeoJSONSource).setData(this.geojson);
-  // }
-
-  private displayButtonApply(): void {
-    this.divButtonApplyWrapper.style.display = 'block';
-  }
-
-  private hidenButtonApply(): void {
-    this.divButtonApplyWrapper.style.display = 'none';
-  }
-
   private newStartMarker(
     old: Marker | undefined,
-    point: GeoJSON.Feature<Point, GeoJsonProperties>,
-    mode?: string
+    point: GeoJSON.Feature<Point, GeoJsonProperties>
   ): Marker {
     this.currentStartPointShare = point;
     if (old) {
@@ -728,26 +649,27 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     old = new Marker({ color: 'green' })
       .setLngLat([point.geometry.coordinates[0], point.geometry.coordinates[1]])
       .addTo(this.mapRef);
-    // if (!mode) {
+
     this.dataPointShare.features.pop();
-    if (this.dataPointShare.features) {
+
+    if (this.dataPointShare.features.length != 1 || !this.markerShareEnd) {
       this.dataPointShare.features.shift();
     }
+
     this.dataPointShare.features.unshift(point);
+
     (this.dataPathShare.geometry as LineString).coordinates =
       this.dataPointShare.features.map(
         (point) => (point.geometry as Point).coordinates
       );
-
     this.dataPointShare.features.push(this.dataPathShare);
     (this.mapRef.getSource('geojson') as GeoJSONSource).setData(
       this.dataPointShare
     );
     this.inputDistanceMeasureShare.value = `${calDistance(
       this.dataPathShare
-    )}km`;
+    )} km`;
 
-    // }
     return old;
   }
 
@@ -763,11 +685,13 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     old = new Marker({ color: 'red' })
       .setLngLat([point.geometry.coordinates[0], point.geometry.coordinates[1]])
       .addTo(this.mapRef);
-    // if (!mode) {
+
     this.dataPointShare.features.pop();
-    if (this.dataPointShare.features.length > 1) {
+
+    if (this.dataPointShare.features.length != 1 || !this.markerShareStart) {
       this.dataPointShare.features.pop();
     }
+
     this.dataPointShare.features.push(point);
     (this.dataPathShare.geometry as LineString).coordinates =
       this.dataPointShare.features.map(
@@ -780,9 +704,22 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     );
     this.inputDistanceMeasureShare.value = `${calDistance(
       this.dataPathShare
-    )}km`;
+    )} km`;
 
     // }
     return old;
+  }
+
+  dateToTimeStr(date: Date | undefined): string {
+    console.log(date);
+    return 'fasd';
+    // return this.datePipe.transform(date, 'HH:mm dd-MM-YYY')!;
+  }
+
+  toggleDataTable(): void {
+    $('#map').toggleClass('h-100');
+    // $('div.mapboxgl-canvas-container').toggleClass('h-100');
+    $('canvas.mapboxgl-canvas').toggleClass('h-100');
+    $('#table-container').toggleClass('d-none');
   }
 }
