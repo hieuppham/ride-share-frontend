@@ -14,7 +14,7 @@ import {
 } from 'mapbox-gl';
 
 import { MapboxService } from './mapbox.service';
-import { ActivatedRoute } from '@angular/router';
+import { StorageService } from '../../services/firebase/storage/storage.service';
 import {
   Point,
   Feature,
@@ -23,9 +23,8 @@ import {
   GeoJsonProperties,
   Geometry,
 } from 'geojson';
-import { IUser } from 'src/app/interface/user';
-import { UserService } from 'src/app/user.service';
-import { IRideRequestDto } from 'src/app/interface/ride-request-dto';
+import { ITempImage, ITempTarget, IUser } from 'src/app/interface/user';
+import { UserService } from 'src/app/services/user.service';
 import { IRide } from 'src/app/interface/ride';
 
 import {
@@ -37,6 +36,7 @@ import {
   getNewPoint,
   pointToCoordinates,
   toFeature,
+  dateArrayToString,
 } from './util/geojson.function';
 
 import {
@@ -49,7 +49,7 @@ import {
 import { initView } from './util/view.config';
 import $ from 'jquery';
 import 'datatables.net';
-import { lineOffset } from '@turf/turf';
+import { AuthService } from 'src/app/services/firebase/auth/auth.service';
 
 @Component({
   selector: 'app-mapbox',
@@ -60,12 +60,15 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   constructor(
     private mapboxService: MapboxService,
     private userService: UserService,
-    private route: ActivatedRoute,
+    private storageService: StorageService,
     private datePipe: DatePipe,
-    private router: Router
+    private router: Router,
+    private authService: AuthService,
+    private date: DatePipe
   ) {}
 
   ngOnInit(): void {
+    this.loadUserInfo();
     this.loadMap();
     this.loadRidesByBound();
   }
@@ -77,7 +80,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     initView(this);
     this.loadTopLeft();
     this.loadBottomLeft();
-    this.loadUserInfo();
   }
 
   public vehicle(type: string): string {
@@ -123,10 +125,11 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     dob: new FormControl('', [Validators.required]),
     gender: new FormControl('', [Validators.required]),
     phone: new FormControl('', [Validators.required]),
+    userIdImage: new FormControl('', [Validators.required]),
     vehicles: new FormArray([]),
   });
 
-  get vehicles(): FormArray {
+  public get vehicles(): FormArray {
     return this.formUserInfo.get('vehicles') as FormArray;
   }
 
@@ -190,16 +193,44 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         type: new FormControl('', [Validators.required]),
         name: new FormControl('', Validators.required),
         licensePlateNumber: new FormControl('', Validators.required),
+        vehicleImage: new FormControl('', Validators.required),
+        lpnImage: new FormControl('', Validators.required),
       })
     );
+    this._tmpImg.vehicleImages.push({ vehicleImage: '', lpnImage: '' });
+    this._tmpTarget.vehicleImages.push({ vehicleImage: null, lpnImage: null });
   }
 
   removeVehicle(index: number): void {
     this.vehicles.removeAt(index);
+    this._tmpImg.vehicleImages.splice(index, 1);
+    this._tmpTarget.vehicleImages.splice(index, 1);
   }
 
-  onSubmitFormUserInfo(): void {
+  async onSubmitFormUserInfo(): Promise<void> {
     this.formUserInfo.value['uid'] = this.user.uid;
+    console.log(this._tmpTarget);
+
+    await this.storageService.upload(
+      this._tmpTarget.userIdImage!,
+      this.user.uid,
+      'userIdImage'
+    );
+    for (let [i, v] of this._tmpTarget.vehicleImages.entries()) {
+      await this.storageService.upload(
+        v.vehicleImage!,
+        this.user.uid,
+        'vehicleImage',
+        i
+      );
+      await this.storageService.upload(
+        v.lpnImage!,
+        this.user.uid,
+        'lpnImage',
+        i
+      );
+    }
+
     this.userService.upsertUser(this.formUserInfo.value).subscribe({
       next: (res) => {
         this.user = res;
@@ -239,7 +270,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   // checked //
   private loadUserInfo(): void {
-    const uid = this.route.snapshot.queryParamMap.get('uid')!;
+    const uid = localStorage.getItem('uid') as string;
     this.userService.getUserByUID(uid).subscribe({
       next: (res) => {
         this.user = res;
@@ -254,6 +285,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
           phone: new FormControl(this.user?.phone, [Validators.required]),
           email: new FormControl(this.user?.email, Validators.required),
           vehicles: new FormArray([]),
+          userIdImage: new FormControl(this.user.userIdImage || null, [
+            Validators.required,
+          ]),
         });
 
         this.user?.vehicles?.forEach((v) => {
@@ -265,6 +299,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
                 v.licensePlateNumber,
                 Validators.required
               ),
+              image: new FormControl(v.vehicleImage, [Validators.required]),
+              lpnImage: new FormControl(v.lpnImage, Validators.required),
             })
           );
         });
@@ -433,8 +469,16 @@ export class MapboxComponent implements OnInit, AfterViewInit {
           },
           {
             data: 'startTime',
+            render: (data, type, row, meta) => {
+              return this.formatDate(data);
+            },
           },
-          { data: 'endTime' },
+          {
+            data: 'endTime',
+            render: (data, type, row, meta) => {
+              return this.formatDate(data);
+            },
+          },
           {
             data: 'distance',
             render: (data, type, row, meta) => {
@@ -447,16 +491,15 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
       $('#table_id tbody').on('click', 'tr', (target: any) => {
         this.chosenRide = this.ridesInBound[target.currentTarget._DT_RowIndex];
-        console.log(this.chosenRide);
-
         this.rideInfoModalVisible = !this.rideInfoModalVisible;
       });
 
       // set canvas w-100
-      $('canvas.mapboxgl-canvas').addClass('w-100');
+      $('canvas.mapboxgl-canvas').addClass('w-100 h-100');
 
       $(document).on('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key == 'x') {
+          console.log('toggle table data');
           this.toggleDataTable();
         }
       });
@@ -549,6 +592,11 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   private loadTopLeft(): void {
     this.mapRef.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
+    $(() => {
+      $('div.mapboxgl-ctrl-top-left')
+        .append($('div#search-user'))
+        .addClass('d-flex');
+    });
   }
 
   private loadBottomLeft(): void {
@@ -713,13 +761,119 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   dateToTimeStr(date: Date | undefined): string {
     console.log(date);
     return 'fasd';
-    // return this.datePipe.transform(date, 'HH:mm dd-MM-YYY')!;
+    // return this.datePipe.transform(date, 'HH:mm dd-MM-YYY')!
   }
 
   toggleDataTable(): void {
     $('#map').toggleClass('h-100');
-    // $('div.mapboxgl-canvas-container').toggleClass('h-100');
     $('canvas.mapboxgl-canvas').toggleClass('h-100');
     $('#table-container').toggleClass('d-none');
+  }
+
+  _tmpImg: ITempImage = {
+    userIdImage: '',
+    vehicleImages: [],
+  };
+
+  _tmpTarget: ITempTarget = {
+    userIdImage: null,
+    vehicleImages: [],
+  };
+  private fileReader: FileReader = new FileReader();
+  onSelectFile(event: Event, type: string, index?: number): void {
+    const target: HTMLInputElement = event.target as HTMLInputElement;
+    if (target.files && target.files.item(0)) {
+      this.fileReader.readAsDataURL(target.files.item(0)!);
+
+      this.fileReader.onload = (e) => {
+        const _url: string = e.target?.result as string;
+        switch (type) {
+          case 'userIdImage': {
+            this._tmpImg.userIdImage = _url;
+            this._tmpTarget.userIdImage = target;
+            break;
+          }
+          case 'vehicleImage': {
+            this._tmpImg.vehicleImages[index!].vehicleImage = _url;
+            this._tmpTarget.vehicleImages[index!].vehicleImage = target;
+            break;
+          }
+          case 'lpnImage': {
+            this._tmpImg.vehicleImages[index!].lpnImage = _url;
+            this._tmpTarget.vehicleImages[index!].lpnImage = target;
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+      };
+    }
+  }
+
+  searchUserResult: IUser[] = [];
+  onSearchUser(event: Event): void {
+    let what = (event.target as HTMLInputElement).value.trim();
+    if (what) {
+      this.userService.searchUser(what).subscribe({
+        next: (res) => {
+          console.log('searching');
+          this.searchUserResult = res;
+        },
+        error: (err) => console.error(err),
+      });
+    }
+  }
+
+  formatDate(date: number[]): string {
+    return dateArrayToString(date);
+  }
+
+  chosenSearchUser: IUser | undefined;
+  searchUserModalVisible: boolean = false;
+  toggleSearchUserModal(user?: IUser): void {
+    if (user) {
+      this.chosenSearchUser = user;
+    }
+    this.searchUserModalVisible = !this.searchUserModalVisible;
+  }
+
+  chosenEditMyRide: IRide | undefined;
+  editMyRideModalVisible: boolean = false;
+  toggleEditMyRideModal(ride?: IRide): void {
+    if (ride) {
+      this.chosenEditMyRide = ride;
+    }
+    this.editMyRideModalVisible = !this.editMyRideModalVisible;
+    this.toggleMyRidesModal();
+  }
+
+  myRidesModalVisible: boolean = false;
+  toggleMyRidesModal(): void {
+    this.myRidesModalVisible = !this.myRidesModalVisible;
+  }
+
+  userInfoModalVisible: boolean = false;
+  toggleUserInfoModal(): void {
+    this.userInfoModalVisible = !this.userInfoModalVisible;
+  }
+
+  confirmSignOutModalVisible: boolean = false;
+  toggleConfirmSignOutModal(): void {
+    this.toggleUserInfoModal();
+    this.confirmSignOutModalVisible = !this.confirmSignOutModalVisible;
+  }
+
+  signOutApp(): void {
+    this.authService.signOutApp();
+  }
+
+  dateToStr(date: any): string {
+    if (date) {
+      let _dateAny: any = date as any;
+      let _dateNums: number[] = _dateAny as number[];
+      return dateArrayToString(_dateNums);
+    }
+    return '';
   }
 }

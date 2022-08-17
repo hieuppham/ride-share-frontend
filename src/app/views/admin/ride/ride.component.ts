@@ -5,7 +5,7 @@ import { AdminService } from '../admin.service';
 import { IRequestUpdateStatusDto } from '../../../interface/request-update-status-dto';
 @Component({
   templateUrl: 'ride.component.html',
-  styleUrls: ['ride.component.scss'],
+  styleUrls: ['../admin.component.scss'],
 })
 export class RideComponent implements OnInit {
   rideResponseDto: IRideResponseDto[] = [];

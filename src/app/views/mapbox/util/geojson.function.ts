@@ -8,6 +8,9 @@ import {
   Geometry,
 } from 'geojson';
 import * as turf from '@turf/turf';
+
+import { formatDate } from '@angular/common';
+
 function getStartPoint(dataPoint: FeatureCollection): Point {
   return dataPoint.features[0].geometry as Point;
 }
@@ -99,6 +102,16 @@ function toFeature(geometry: Geometry): Feature<Geometry, GeoJsonProperties> {
   } as Feature<Geometry, GeoJsonProperties>;
 }
 
+function twoDigit(num: number): string {
+  return num < 10 ? '0' + num : num + '';
+}
+
+function dateArrayToString(date: number[]): string {
+  return `${twoDigit(date[3])}:${twoDigit(date[4])} ${twoDigit(
+    date[2]
+  )}/${twoDigit(date[1])}/${date[0]}`;
+}
+
 export {
   getStartPoint,
   getEndPoint,
@@ -109,4 +122,5 @@ export {
   coordinatesGeocoder,
   pointToCoordinates,
   toFeature,
+  dateArrayToString,
 };

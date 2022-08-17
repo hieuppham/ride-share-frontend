@@ -5,7 +5,6 @@ import { Observable } from 'rxjs';
 import { IRideResponseDto } from 'src/app/interface/ride-reponse-dto';
 import { IRide } from 'src/app/interface/ride';
 import { IBoundRequestDto } from '../../interface/bound-request-dto';
-
 @Injectable({
   providedIn: 'root',
 })

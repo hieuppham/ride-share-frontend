@@ -42,11 +42,9 @@
               </td>
               <td class="text-center">
                 <input id="ride-status" type="checkbox" [checked]="isActive(ride.status)"
-                  (change)="updateStatus(ride._id, $event)">
+                  (change)="updateStatus(ride._id, $event)" class="btn-action">
                 <button
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text">Sửa</button>
-                <!-- <button
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input red-background-white-text">Xóa</button> -->
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action">Sửa</button>
               </td>
 
             </tr>

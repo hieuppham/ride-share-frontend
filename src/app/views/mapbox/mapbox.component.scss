@@ -74,16 +74,6 @@ div#popup-click {
     flex-direction: column;
 }
 
-div#user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-div#user-info > * {
-    margin-bottom: 10px;
-}
-
 div#vehicles {
     display: flex;
     flex-direction: column;
@@ -105,12 +95,6 @@ div.vehicle-info > * {
     min-width: 100px;
     margin :10px 10px 0 0 ;
     font-size: 12px;
-}
-
-button#btn-close-modal {
-    min-width: 10px;
-    max-width: 50px;
-    padding: 5px;
 }
 
 .modal-footer {
@@ -151,6 +135,12 @@ input#distance {
     background-color: #ce5c18;
     color: white;
 }
+
+.hl-red {
+    background-color: #de0e23;
+    color: #eef8f3;
+}
+
 
 .mapboxgl-ctrl-bottom-left {
     display: flex;
@@ -241,4 +231,41 @@ button#btn-toggle-table {
 
 div#toggle-table-container {
     display: flex;
+}
+
+.list-item {
+    padding: 10px;
+    margin: 0 0 15px 0;
+    min-width: 100%;
+}
+
+.list-item > p {
+    margin-bottom: 15px;
+    margin-top: 5px;
+}
+
+div#user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+div#input-user-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 2vh;
+}
+
+div#text-user-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+div#text-user-info > * {
+    margin-top: 5px;
+    margin-bottom: 5px;
 }

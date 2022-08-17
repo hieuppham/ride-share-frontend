@@ -1,7 +1,7 @@
 <c-row>
   <c-col xs>
     <c-card class="mb-4">
-      <c-card-header>Users</c-card-header>
+      <c-card-header>Người dùng</c-card-header>
       <c-card-body>
         <table [hover]="true" [responsive]="true" [striped]="true" align="middle" cTable class="mb-0 border">
           <thead cTableColor="light">
@@ -46,11 +46,9 @@
               </td>
               <td class="text-center">
                 <input id="active-user" type="checkbox" [checked]="isActive(user.status)"
-                  (change)="updateStatus(user.id!, $event)">
+                  (change)="updateStatus(user.id!, $event)" class="btn-action">
                 <button [cModalToggle]="userInfoModal.id"
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text">Sửa</button>
-                <!-- <button [cModalToggle]="userConfirmDeleteModal.id"
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input red-background-white-text">Xóa</button> -->
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action">Sửa</button>
               </td>
 
             </tr>
@@ -65,70 +63,8 @@
   <c-modal-header>
     <h5 cModalTitle>Thông tin chuyến đi</h5>
     <button [cModalToggle]="userInfoModal.id" id="btn-close-modal"
-      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input " cButton>
+      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input fit-width" cButton>
       Đóng
     </button>
   </c-modal-header>
   <c-modal-body>
-    <!-- <h4>{{rideShow?.startPoint?.coordinates}} -> {{rideShow?.endPoint?.coordinates}}</h4> -->
-    <!-- <p>Bắt đầu: <b>{{rideShow?.startTime}}</b></p>
-      <p>Kết thúc: <b>{{rideShow?.endTime}}</b></p>
-      <p>Loại phương tiện: <b>{{vehicle(rideShow?.vehicle?.type!)}}</b></p>
-      <p>Tên phương tiện <b>{{rideShow?.vehicle?.name}}</b></p>
-      <p>Biển số: <b>{{rideShow?.vehicle?.licensePlateNumber}}</b></p>
-      <p>Chủ xe: <b>{{rideShow?.user?.fullName}}</b></p>
-      <p>Giới tính: <b>{{gender(rideShow?.user?.gender!)}}</b></p>
-      <p>Số điện thại: <a href=""><b>{{rideShow?.user?.phone}}</b></a></p>
-      <p>Email: <a href="{{'https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=' + rideShow?.user?.email}}"
-              target="_blank"><b>{{rideShow?.user?.email}}</b></a>
-      </p>
-      <p>Ghi chú: <b>{{rideShow?.note}}</b></p> -->
-
-    <!-- </c-modal-body>
-  <c-modal-footer>
-    <div class="modal-footer">
-      <button class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-        cButton [cModalToggle]="userInfoModal.id">Liên hệ chủ xe</button> -->
-    <!-- <button
-              class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-              cButton type="button" [cModalToggle]="rideInfoModal.id">Đăng xuất -->
-    <!-- </button>
-    </div>
-  </c-modal-footer>
-</c-modal>
-
-<!-- <c-modal #userConfirmDeleteModal alignment="center" id="user-info-modal" [visible]="false">
-  <c-modal-header>
-    <h5 cModalTitle>Xoá người dùng {{12414}}}</h5>
-    <button [cModalToggle]="userConfirmDeleteModal.id" id="user-close-modal"
-      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input " cButton>
-      Đóng
-    </button>
-  </c-modal-header>
-  <c-modal-body> -->
-    <!-- <h4>{{rideShow?.startPoint?.coordinates}} -> {{rideShow?.endPoint?.coordinates}}</h4> -->
-    <!-- <p>Bắt đầu: <b>{{rideShow?.startTime}}</b></p>
-      <p>Kết thúc: <b>{{rideShow?.endTime}}</b></p>
-      <p>Loại phương tiện: <b>{{vehicle(rideShow?.vehicle?.type!)}}</b></p>
-      <p>Tên phương tiện <b>{{rideShow?.vehicle?.name}}</b></p>
-      <p>Biển số: <b>{{rideShow?.vehicle?.licensePlateNumber}}</b></p>
-      <p>Chủ xe: <b>{{rideShow?.user?.fullName}}</b></p>
-      <p>Giới tính: <b>{{gender(rideShow?.user?.gender!)}}</b></p>
-      <p>Số điện thại: <a href=""><b>{{rideShow?.user?.phone}}</b></a></p>
-      <p>Email: <a href="{{'https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=' + rideShow?.user?.email}}"
-              target="_blank"><b>{{rideShow?.user?.email}}</b></a>
-      </p>
-      <p>Ghi chú: <b>{{rideShow?.note}}</b></p> -->
-
-    <!-- </c-modal-body>
-  <c-modal-footer>
-    <div class="modal-footer">
-      <button class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-        cButton [cModalToggle]="userConfirmDeleteModal.id">Liên hệ chủ xe</button> -->
-    <!-- <button
-              class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-              cButton type="button" [cModalToggle]="rideInfoModal.id">Đăng xuất -->
-    <!-- </button> -->
-    <!-- </div>
-  </c-modal-footer>
-</c-modal> --> -

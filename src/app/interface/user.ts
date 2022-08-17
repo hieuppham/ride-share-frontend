@@ -11,4 +11,25 @@ export interface IUser {
   email: string;
   vehicles: IVehicle[] | null;
   status: EEntityStatus;
+  userIdImage: string | null;
+}
+
+export interface ITempImage {
+  userIdImage: string;
+  vehicleImages: ITempVehilceImage[];
+}
+
+interface ITempVehilceImage {
+  vehicleImage: string;
+  lpnImage: string;
+}
+
+export interface ITempTarget {
+  userIdImage: HTMLInputElement | null;
+  vehicleImages: ITempVehicleTarget[];
+}
+
+interface ITempVehicleTarget {
+  vehicleImage: HTMLInputElement | null;
+  lpnImage: HTMLInputElement | null;
 }

@@ -5,7 +5,7 @@ import { EEntityStatus } from 'src/app/interface/entity-status';
 import { IRequestUpdateStatusDto } from 'src/app/interface/request-update-status-dto';
 @Component({
   templateUrl: 'user.component.html',
-  styleUrls: ['user.component.scss'],
+  styleUrls: ['../admin.component.scss'],
 })
 export class UserComponent implements OnInit {
   constructor(private adminService: AdminService) {}
