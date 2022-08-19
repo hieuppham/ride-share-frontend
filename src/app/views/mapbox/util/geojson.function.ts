@@ -10,6 +10,7 @@ import {
 import * as turf from '@turf/turf';
 
 import { formatDate } from '@angular/common';
+import { EEntityStatus } from 'src/app/interface/entity-status';
 
 function getStartPoint(dataPoint: FeatureCollection): Point {
   return dataPoint.features[0].geometry as Point;
@@ -31,7 +32,7 @@ function getStringTimeNow(): string {
   return new Date().toISOString().slice(0, 16);
 }
 
-function getNewPoint(e: any): GeoJSON.Feature<Point, GeoJsonProperties> {
+function newPoint(e: any): GeoJSON.Feature<Point, GeoJsonProperties> {
   return {
     type: 'Feature',
     geometry: {
@@ -112,15 +113,43 @@ function dateArrayToString(date: number[]): string {
   )}/${twoDigit(date[1])}/${date[0]}`;
 }
 
+function enumToStatus(status: string): string {
+  let _status: string;
+  switch (status) {
+    case 'INACTIVE': {
+      _status = 'Không hoạt động';
+      break;
+    }
+    case 'ACTIVE': {
+      _status = 'Hoạt động';
+      break;
+    }
+    case 'UNKNOWN': {
+      _status = 'Chưa được duyệt';
+      break;
+    }
+    case 'EXPIRED': {
+      _status = 'Đã kết thúc';
+      break;
+    }
+    default: {
+      _status = 'Chưa được duyệt';
+      break;
+    }
+  }
+  return _status;
+}
+
 export {
   getStartPoint,
   getEndPoint,
   getPath,
   calDistance,
   getStringTimeNow,
-  getNewPoint,
+  newPoint,
   coordinatesGeocoder,
   pointToCoordinates,
   toFeature,
   dateArrayToString,
+  enumToStatus,
 };

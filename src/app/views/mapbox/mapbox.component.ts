@@ -9,7 +9,6 @@ import {
   Marker,
   MapMouseEvent,
   GeoJSONSource,
-  LngLat,
   GeoJSONSourceRaw,
 } from 'mapbox-gl';
 
@@ -21,7 +20,6 @@ import {
   FeatureCollection,
   LineString,
   GeoJsonProperties,
-  Geometry,
 } from 'geojson';
 import { ITempImage, ITempTarget, IUser } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
@@ -33,10 +31,11 @@ import {
   getPath,
   calDistance,
   getStringTimeNow,
-  getNewPoint,
+  newPoint,
   pointToCoordinates,
   toFeature,
   dateArrayToString,
+  enumToStatus,
 } from './util/geojson.function';
 
 import {
@@ -50,6 +49,7 @@ import { initView } from './util/view.config';
 import $ from 'jquery';
 import 'datatables.net';
 import { AuthService } from 'src/app/services/firebase/auth/auth.service';
+import { EEntityStatus } from 'src/app/interface/entity-status';
 
 @Component({
   selector: 'app-mapbox',
@@ -104,7 +104,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     features: [],
   };
 
-  private dataPathShare: GeoJSON.Feature = {
+  private dataPathShare: GeoJSON.Feature<LineString, GeoJsonProperties> = {
     type: 'Feature',
     geometry: {
       type: 'LineString',
@@ -143,12 +143,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   ctrlBottomLeft!: HTMLDivElement;
   ctrlMidRight!: HTMLDivElement;
 
-  currentChosenPoint: GeoJSON.Feature<Point, GeoJsonProperties> | undefined;
-
   buttonAdminPage!: HTMLButtonElement;
   buttonToggleSearch!: HTMLButtonElement;
   divSearch!: HTMLDivElement;
-  // avatar!: HTMLButtonElement;
   buttonToggleProfile!: HTMLButtonElement;
   divButtonApplyWrapper!: HTMLDivElement;
   buttonApplyPoint!: HTMLButtonElement;
@@ -240,23 +237,29 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   }
 
   onSubmitFormShare(): void {
-    this.formShareRide.patchValue({
+    const _ride: IRide = {
+      id: null,
       uid: this.user.uid,
-      startPoint: this.currentStartPointShare,
-      endPoint: this.currentEndPointShare,
-      path: this.dataPathShare,
+      startPoint: this.currentStartPointShare!,
+      endPoint: this.currentEndPointShare!,
+      path: this.dataPathShare!,
+      startTime: new Date(),
+      endTime: new Date(),
+      status: EEntityStatus.UNKNOWN,
+      note: this.formShareRide.value['note'],
       distance: parseFloat(
         this.inputDistanceMeasureShare.value.replace('km', '')
       ),
-    });
-    this.formShareRide.value['vehicle'] = this.user?.vehicles?.filter(
-      (v) => v.name == this.formShareRide.value['vehicle']
-    )[0];
-    this.formShareRide.value['criterions'] = (
-      this.formShareRide.value['criterions'] as string
-    )
-      .split(',')
-      .map((c) => c.trim());
+      vehicle: this.user?.vehicles?.filter(
+        (v) => v.name == this.formShareRide.value['vehicle']
+      )[0]!,
+      criterions: (this.formShareRide.value['criterions'] = (
+        this.formShareRide.value['criterions'] as string
+      )
+        .split(',')
+        .map((c) => c.trim())),
+    };
+    this.setFormShareValue(_ride);
 
     this.mapboxService.createRide(this.formShareRide.value).subscribe({
       next: (res) => {
@@ -265,7 +268,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       error: (err) => console.error(err),
     });
     this.formShareRide.reset();
-    this.toggleFormShare();
+    this.toggleFormSaveRide();
   }
 
   // checked //
@@ -373,22 +376,10 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         ? 'pointer'
         : 'crosshair';
     });
-
-    this.mapRef.on('click', (e: MapMouseEvent) => {
-      const features = this.mapRef.queryRenderedFeatures(e.point, {
-        layers: ['share-points'],
-      });
-
-      if (features.length > 0) {
-        this.removeSharePoint(features[0] as Feature<Point, GeoJsonProperties>);
-      } else {
-        this.addSharePoint(e);
-      }
-    });
   }
 
-  addSharePoint(e: MapMouseEvent): void {
-    const _line = this.dataPointShare.features.pop();
+  newStepPoint(e: MapMouseEvent): void {
+    this.dataPointShare.features.pop();
     const _end = this.dataPointShare.features.pop();
 
     this.dataPointShare.features.push({
@@ -400,29 +391,44 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     } as Feature<Point, GeoJsonProperties>);
 
     this.dataPointShare.features.push(_end!);
-    this.dataPointShare.features.push(_line!);
-    (this.dataPathShare.geometry as LineString).coordinates =
-      this.dataPointShare.features.map(
-        (point) => (point.geometry as Point).coordinates
-      );
-    this.dataPointShare.features.push(this.dataPathShare);
-    (this.mapRef.getSource('geojson') as GeoJSONSource).setData(
-      this.dataPointShare
-    );
+    this.loadPathLayer();
   }
 
-  removeSharePoint(feature: Feature<Point, GeoJsonProperties>): void {
+  removeStartPoint(): void {
+    this.markerShareStart?.remove();
+    this.dataPointShare.features.shift();
+    // pop linestring
+    this.dataPointShare.features.pop();
+    if (this.dataPointShare.features.length == 0) {
+      //
+      this.currentStartPointShare = undefined;
+    } else {
+      // TODO:
+      console.log(this.dataPathShare.geometry.coordinates);
+    }
+    this.loadPathLayer();
+  }
+
+  removeEndPoint(): void {
+    this.markerShareEnd?.remove();
+    // Pop linestring
+    this.dataPointShare.features.pop();
+    // pop endpoint
+    this.dataPointShare.features.pop();
+    if (this.dataPointShare.features.length == 0) {
+      this.currentEndPointShare = undefined;
+    } else {
+      // TODO:
+    }
+    this.loadPathLayer();
+  }
+
+  removeStepPoint(feature: Feature<Point, GeoJsonProperties>): void {
+    this.dataPointShare.features.pop();
     this.dataPointShare.features = this.dataPointShare.features.filter(
-      (f) => f != feature
+      (f) => f!.properties!['id'] != feature!.properties!['id']
     );
-    (this.dataPathShare.geometry as LineString).coordinates =
-      this.dataPointShare.features.map(
-        (point) => (point.geometry as Point).coordinates
-      );
-    this.dataPointShare.features.push(this.dataPathShare);
-    (this.mapRef.getSource('geojson') as GeoJSONSource).setData(
-      this.dataPointShare
-    );
+    this.loadPathLayer();
   }
 
   loadDataTable(): void {
@@ -612,14 +618,17 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
     //start
     this.mapRef.addControl(
-      new MapboxGeocoder(GEOCODER_OPT_START_POINT).on('result', (e) => {
-        this.currentChosenPoint = getNewPoint(e);
-        this.currentStartPointShare = this.currentChosenPoint;
-        this.markerShareStart = this.newStartMarker(
-          this.markerShareStart,
-          this.currentStartPointShare
-        );
-      }),
+      new MapboxGeocoder(GEOCODER_OPT_START_POINT)
+        .on('result', (e) => {
+          this.currentStartPointShare = newPoint(e);
+          this.markerShareStart = this.newStartMarker(
+            this.markerShareStart,
+            this.currentStartPointShare
+          );
+        })
+        .on('clear', (e) => {
+          this.removeStartPoint();
+        }),
       'bottom-left'
     );
     this.formShareDivStart = this.ctrlBottomLeft.getElementsByClassName(
@@ -629,14 +638,17 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
     // end
     this.mapRef.addControl(
-      new MapboxGeocoder(GEOCODER_OPT_END_POINT).on('result', (e) => {
-        this.currentChosenPoint = getNewPoint(e);
-        this.currentEndPointShare = this.currentChosenPoint;
-        this.markerShareEnd = this.newEndMarker(
-          this.markerShareEnd,
-          this.currentEndPointShare
-        );
-      }),
+      new MapboxGeocoder(GEOCODER_OPT_END_POINT)
+        .on('result', (e) => {
+          this.currentEndPointShare = newPoint(e);
+          this.markerShareEnd = this.newEndMarker(
+            this.markerShareEnd,
+            this.currentEndPointShare
+          );
+        })
+        .on('clear', (e) => {
+          this.removeEndPoint();
+        }),
       'bottom-left'
     );
 
@@ -670,20 +682,43 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.ctrlBottomLeft.append(this.buttonShowMyRides);
   }
 
-  toggleFormShare(): void {
+  toggleFormSaveRide(): void {
     if (this.formShareWrapper.style.display == 'block') {
+      this.switchMapOnClickListener(false);
       this.formShareWrapper.style.display = 'none';
     } else {
+      this.switchMapOnClickListener(true);
       this.formShareWrapper.style.display = 'block';
     }
   }
 
-  navigateToAdminPage(): void {
-    console.log('admin');
+  switchMapOnClickListener(saveRideModeOn: boolean): void {
+    if (saveRideModeOn) {
+      this.mapRef.on('click', (e: MapMouseEvent & EventData) => {
+        const features = this.mapRef.queryRenderedFeatures(e.point, {
+          layers: ['share-points'],
+        });
 
-    this.router.navigate(['/admin'], {
-      queryParams: { uid: this.user!.uid },
-    });
+        if (features.length > 0) {
+          this.removeStepPoint(
+            features[0] as Feature<Point, GeoJsonProperties>
+          );
+        } else {
+          if (this.dataPointShare.features.length >= 3) {
+            this.newStepPoint(e);
+          }
+        }
+      });
+    } else {
+      // TODO: thêm action listener vào đây
+      this.mapRef.on('click', (e: MapMouseEvent & EventData) => {
+        console.log('form save off');
+      });
+    }
+  }
+
+  navigateToAdminPage(): void {
+    this.router.navigate(['/admin']);
   }
 
   private newStartMarker(
@@ -703,21 +738,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     if (this.dataPointShare.features.length != 1 || !this.markerShareEnd) {
       this.dataPointShare.features.shift();
     }
-
     this.dataPointShare.features.unshift(point);
 
-    (this.dataPathShare.geometry as LineString).coordinates =
-      this.dataPointShare.features.map(
-        (point) => (point.geometry as Point).coordinates
-      );
-    this.dataPointShare.features.push(this.dataPathShare);
-    (this.mapRef.getSource('geojson') as GeoJSONSource).setData(
-      this.dataPointShare
-    );
-    this.inputDistanceMeasureShare.value = `${calDistance(
-      this.dataPathShare
-    )} km`;
-
+    this.loadPathLayer();
     return old;
   }
 
@@ -739,8 +762,13 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     if (this.dataPointShare.features.length != 1 || !this.markerShareStart) {
       this.dataPointShare.features.pop();
     }
-
     this.dataPointShare.features.push(point);
+
+    this.loadPathLayer();
+    return old;
+  }
+
+  loadPathLayer(): void {
     (this.dataPathShare.geometry as LineString).coordinates =
       this.dataPointShare.features.map(
         (point) => (point.geometry as Point).coordinates
@@ -753,9 +781,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.inputDistanceMeasureShare.value = `${calDistance(
       this.dataPathShare
     )} km`;
-
-    // }
-    return old;
   }
 
   dateToTimeStr(date: Date | undefined): string {
@@ -838,16 +863,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.searchUserModalVisible = !this.searchUserModalVisible;
   }
 
-  chosenEditMyRide: IRide | undefined;
-  editMyRideModalVisible: boolean = false;
-  toggleEditMyRideModal(ride?: IRide): void {
-    if (ride) {
-      this.chosenEditMyRide = ride;
-    }
-    this.editMyRideModalVisible = !this.editMyRideModalVisible;
-    this.toggleMyRidesModal();
-  }
-
   myRidesModalVisible: boolean = false;
   toggleMyRidesModal(): void {
     this.myRidesModalVisible = !this.myRidesModalVisible;
@@ -864,6 +879,11 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.confirmSignOutModalVisible = !this.confirmSignOutModalVisible;
   }
 
+  confirmSaveRideModalVisible: boolean = false;
+  toggleConfirmSaveRideModal(): void {
+    this.confirmSaveRideModalVisible = !this.confirmSaveRideModalVisible;
+  }
+
   signOutApp(): void {
     this.authService.signOutApp();
   }
@@ -875,5 +895,30 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       return dateArrayToString(_dateNums);
     }
     return '';
+  }
+
+  status(status: any) {
+    return enumToStatus(status as string);
+  }
+
+  showFormEditRide(ride: IRide): void {
+    this.toggleMyRidesModal();
+    this.toggleFormSaveRide();
+    this.setFormShareValue(ride);
+  }
+
+  setFormShareValue(ride: IRide): void {
+    this.formShareRide.patchValue({
+      uid: ride.uid,
+      startPoint: ride.startPoint,
+      endPoint: ride.endPoint,
+      path: ride.path,
+      distance: ride.distance,
+      vehicle: ride.vehicle,
+      criterions: ride.criterions,
+      startTime: ride.startTime,
+      endTime: ride.endTime,
+      note: ride.note,
+    });
   }
 }

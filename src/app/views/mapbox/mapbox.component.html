@@ -42,14 +42,14 @@
                 <textarea formControlName="note" id="note" cols="27" rows="5" placeholder="Ghi chú"></textarea>
             </div>
         </div>
-        <button id="btn-form-submit" type="button" [cModalToggle]="shareConfirmModal.id"
+        <button id="btn-form-submit" type="button" (click)="toggleConfirmSaveRideModal()"
             class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl green-background-white-text">Xác
             nhận</button>
     </form>
     <!-- end share form-->
     <!-- toggle share form -->
     <button id="btn-toggle-share" class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-        (click)="toggleFormShare()">Chia sẻ chuyến
+        (click)="toggleFormSaveRide()">Chia sẻ chuyến
         đi</button>
     <!-- end toggle share form -->
 </div>
@@ -143,38 +143,27 @@
     </c-modal-header>
     <c-modal-body>
         <ng-container *ngFor="let ride of rideUser; let i = index">
-            <div class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl list-item" (click)="toggleEditMyRideModal(ride)">
+            <div class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl list-item">
                 <p class="text-center"><span class="hl hl-green">{{dateToStr(ride.startTime)}}</span><span
                         class="hl hl-red">{{dateToStr(ride.endTime)}}</span>
                 <p>Khoảng cách <span class="hl hl-yellow">{{ride.distance}} km</span></p>
                 <p>Phương tiện <span class="hl hl-deepblue">{{ride.vehicle.name}}</span></p>
+                <p>Trạng thái <span class="hl hl-lightgrey">{{status(ride.status)}}</span> </p>
+                <div class="d-flex justify-content-between">
+                    <button
+                        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input fit-width hl-red">Xóa</button>
+                    <button (click)="showFormEditRide(ride)"
+                        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input fit-width hl-yellow">Cập
+                        nhật</button>
+                </div>
             </div>
         </ng-container>
     </c-modal-body>
 </c-modal>
 <!-- end my rides modal -->
 
-<c-modal #editMyRideModal alignment="center" id="editMyRideModal" [visible]="editMyRideModalVisible">
-    <c-modal-header>
-        <h5 cModalTitle>Thông tin chuyến đi</h5>
-        <button (click)="toggleEditMyRideModal()" id="btn-close-modal"
-            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input fit-width" cButton>
-            Đóng
-        </button>
-    </c-modal-header>
-    <c-modal-body>
-    </c-modal-body>
-    <c-modal-footer>
-        <div class="modal-footer">
-            <button (click)="toggleEditMyRideModal()"
-                class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-                cButton>Lưu thông tin</button>
-        </div>
-    </c-modal-footer>
-</c-modal>
-
 <!-- modal confirm  -->
-<c-modal #shareConfirmModal alignment="center" id="shareConfirmModal" [visible]="false">
+<c-modal #saveRideCofirmModal alignment="center" id="saveRideCofirmModal" [visible]="confirmSaveRideModalVisible">
     <c-modal-header>
         <h5 cModalTitle>Chia sẻ chuyến đi này?<b>
             </b></h5>
@@ -184,10 +173,10 @@
         <div class="modal-footer">
             <button
                 class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-                cButton type="button" [cModalToggle]="shareConfirmModal.id">Hủy</button>
+                cButton type="button" (click)="toggleConfirmSaveRideModal()">Hủy</button>
             <button
                 class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-                cButton type="button" [cModalToggle]="notifyAddRideModal.id" (click)="onSubmitFormShare()">Chia
+                cButton type="button" (click)="onSubmitFormShare()">Chia
                 sẻ
             </button>
         </div>
@@ -273,7 +262,18 @@
                 <c-avatar id="user-avatar" shape="rounded-1" size="xl" src="{{this.user?.photoUrl}}"
                     class="avatar avatar-md rounded-1 text-primary">
                 </c-avatar>
+
                 <div id="input-user-info">
+
+                    <div id="user-id-image" class="d-flex flex-column align-items-center">
+                        <input *ngIf="_tmpImg.userIdImage" [src]="_tmpImg.userIdImage" height="240px" width="240px"
+                            type="image">
+                        <input style="max-width: 240px; width:auto;" class="input-fix mt-2"
+                            formControlName="userIdImage" type="file"
+                            accept="image/png, image/jpg,  image/jpeg, image/raw"
+                            (change)="onSelectFile($event, 'userIdImage')">
+                    </div>
+
                     <div id="text-user-info">
                         <input formControlName="uid" type="text" class="d-none">
 
@@ -300,41 +300,41 @@
                             class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
                             placeholder="Email" readonly>
                     </div>
-                    <div id="img-user-info">
-                        <input *ngIf="_tmpImg.userIdImage" [src]="_tmpImg.userIdImage" height="200px" width="200px"
-                            type="image">
-                        <input formControlName="userIdImage" type="file" (change)="onSelectFile($event, 'userIdImage')">
+
+                    <div id="vehicle-info">
                         <div formArrayName="vehicles" id="vehicles">
                             <div *ngFor="let v of vehicles.controls; let i = index">
-                                <div class="vehicle-info" [formGroupName]="i">
+                                <div class="vehicle-item" [formGroupName]="i">
                                     <select [id]="'type-'+i" formControlName="type"
-                                        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+                                        class="input-fix mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl">
                                         <option value="motobike" selected>Xe máy</option>
                                         <option value="car">Ô tô</option>
                                     </select>
 
                                     <input [id]="'vehicle-' + i" type="text"
-                                        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+                                        class="input-fix mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
                                         formControlName="name" placeholder="Tên phương tiện">
-
                                     <!-- image -->
                                     <input *ngIf="_tmpImg.vehicleImages[i] && _tmpImg.vehicleImages[i].vehicleImage"
-                                        [src]="_tmpImg.vehicleImages[i].vehicleImage" height="200px" width="200px"
+                                        [src]="_tmpImg.vehicleImages[i].vehicleImage" height="240px" width="240px"
                                         type="image">
-                                    <input type="file" formControlName="vehicleImage"
+                                    <input class="input-fix input-fix-file" type="file"
+                                        accept="image/png, image/jpg,  image/jpeg, image/raw"
+                                        formControlName="vehicleImage" placeholder="Hình ảnh phương tiện"
                                         (change)="onSelectFile($event, 'vehicleImage', i)">
                                     <!-- end image -->
 
                                     <input [id]="'lpn-' + i" type="text"
                                         class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
                                         formControlName="licensePlateNumber" placeholder="Biển số">
+
                                     <!-- license plate number image -->
                                     <input *ngIf="_tmpImg.vehicleImages[i] && _tmpImg.vehicleImages[i].lpnImage"
-                                        [src]="_tmpImg.vehicleImages[i].lpnImage" height="200px" width="200px"
+                                        [src]="_tmpImg.vehicleImages[i].lpnImage" height="240px" width="240px"
                                         type="image">
-                                    <input type="file" formControlName="lpnImage"
+                                    <input class="input-fix input-fix-file" type="file"
+                                        accept="image/png, image/jpg,  image/jpeg, image/raw" formControlName="lpnImage"
                                         (change)="onSelectFile($event, 'lpnImage', i)">
-
                                     <!-- end license plate number image -->
 
                                     <button class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
@@ -342,6 +342,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <button class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
                             (click)="addVehicle()">+</button>
                     </div>
