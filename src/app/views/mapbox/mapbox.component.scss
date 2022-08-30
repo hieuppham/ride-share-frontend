@@ -1,290 +1,215 @@
-
 #main-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: end;
-    height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  height: 100vh;
 }
 
 #map {
-    min-height: 61%;
+  min-height: 61%;
 }
 
 .fit-width {
-    min-width: fit-content;
-    width: auto;
+  min-width: fit-content;
+  width: auto;
 }
 
 #table-container {
-    height: 39%;
+  height: 39%;
 }
 .mapboxgl-popup {
-    max-width: 400px;
-    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  max-width: 400px;
+  font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 
 #geocoder-container > div {
-    min-width: 50%;
-    margin-left: 25%;
-    }
+  min-width: 50%;
+  margin-left: 25%;
+}
 
 .mapboxgl-ctrl-bottom-center {
-    bottom: 0;
-    position: absolute;
-    margin: 10px 50%;
+  bottom: 0;
+  position: absolute;
+  margin: 10px 50%;
 }
 
 .coordinates {
-background: rgba(0, 0, 0, 0.5);
-color: #fff;
-position: absolute;
-bottom: 40px;
-left: 10px;
-padding: 5px 10px;
-margin: 0;
-font-size: 11px;
-line-height: 18px;
-border-radius: 3px;
-
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  position: absolute;
+  bottom: 40px;
+  left: 10px;
+  padding: 5px 10px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 18px;
+  border-radius: 3px;
 }
 
 .mapboxgl-ctrl {
-    background-color: white;
+  background-color: white;
 }
 
-
 div#popup-click {
-    background-color: white;
-    margin: 10px;
-    bottom: 0;
-    display: none;
-    min-width: 100px;
+  background-color: white;
+  margin: 10px;
+  bottom: 0;
+  display: none;
+  min-width: 100px;
 }
 
 #line-string {
-    display: none;
-}
-
-#form-ride-share {
-    display: none;
+  display: none;
 }
 
 .mapboxgl-ctrl-top-right {
-    display: flex;
-    flex-direction: column;
-}
-
-div#vehicles {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-// div#vehicles > * > *{
-//     display: flex;
-//     flex-direction: row;
-//     align-items: center;
-// }
-
-div.vehicle-item {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-}
-
-div.vehicle-item > * {
-    // min-width: 100px;
-    margin :10px 10px 0 0 ;
-    font-size: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-footer {
-    margin: 0;
-    padding: 5px;
-    border-top: none;
-    justify-content: space-between;
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: nowrap;
+  margin: 0;
+  padding: 5px;
+  border-top: none;
+  justify-content: space-between;
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: nowrap;
 }
 
 .modal-footer > button {
-    min-width: fit-content;
-    margin: 5px;
-}
-
-input#distance {
-    font-size: 14px;
+  min-width: fit-content;
+  margin: 5px;
 }
 
 .green-background-white-text {
-    background-color: #00a845;
-    color: white;
+  background-color: #00a845;
+  color: white;
 }
 
-.white-background-black-text{
-    background-color: white;
-    color: rgba(44, 56, 74, 0.681) !important;
+.white-background-black-text {
+  background-color: white;
+  color: rgba(44, 56, 74, 0.681) !important;
 }
 
 .gray-background-white-text {
-    background-color: #917700;
-    color: white;
+  background-color: #917700;
+  color: white;
 }
 
 .red-background-white-text {
-    background-color: #ce5c18;
-    color: white;
-}
-
-.hl-red {
-    background-color: #de0e23;
-    color: #eef8f3;
-}
-
-
-.mapboxgl-ctrl-bottom-left {
-    display: flex;
-}
-
-button#btn-toggle-share {
-    // min-width: fit-content;
+  background-color: #ce5c18;
+  color: white;
 }
 
 button#btn-toggle-profile {
-    margin: 10px; 
-    z-index: 1;
-    // position: fixed;
+  margin: 10px;
+  z-index: 1;
+  // position: fixed;
 }
 
 .mapboxgl-ctrl-top-center {
-    // position: relative;
-    // top: 0;
-    display: flex;
-    flex-direction: row-reverse;
-    margin-top: -20px;
-}
-
-button#btn-admin-page {
-    max-width: fit-content;
-}
-
-button#btn-toggle-show-my-rides {
-    // min-width: fit-content;
+  display: flex;
+  flex-direction: row-reverse;
+  margin-top: -20px;
 }
 
 .mapboxgl-ctrl-mid-right {
-    right: 0;
-    top: 8%;
-    position: absolute;
-    margin-right: 10px;
-    min-width: 150px; 
+  right: 0;
+  top: 8%;
+  position: absolute;
+  margin-right: 10px;
+  min-width: 150px;
 }
 
 .ride-response {
-    margin-top: 10px;
-    margin-bottom: 0;
-    background-color: white;
+  margin-top: 10px;
+  margin-bottom: 0;
+  background-color: white;
 }
 
 .ride-response > p {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .ride-response > button {
-    max-width: fit-content;
-}
-
-div#popup-click {
-    display: flex;
-    background-color: none;
-    margin: 0;
+  max-width: fit-content;
 }
 
 button#btn-admin-page {
-    min-width: fit-content;
-    margin: 10px 0 0 0;
-}
-
-div#text-share-wrapper {
-    min-height: 100px;
-    padding: 0;
+  margin: 10px 0 0 0;
 }
 
 textarea#note {
-    border: none;
+  border: none;
 }
 
 div.ride-response {
-    min-width: fit-content;
-    padding: 5px 10px;
-    height: fit-content;
+  min-width: fit-content;
+  padding: 5px 10px;
+  height: fit-content;
 }
 
 #table-wrapper {
-    bottom: 0;
+  bottom: 0;
 }
 
 button#btn-toggle-table {
-    margin-bottom: 10px;
-    margin-top: auto;
+  margin-bottom: 10px;
+  margin-top: auto;
 }
 
 div#toggle-table-container {
-    display: flex;
+  display: flex;
 }
 
 .list-item {
-    padding: 10px;
-    margin: 0 0 15px 0;
-    min-width: 100%;
+  padding: 10px;
+  margin: 0 0 15px 0;
+  min-width: 100%;
 }
 
 .list-item > p {
-    margin-bottom: 15px;
-    margin-top: 5px;
-}
-
-div#user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  margin-bottom: 15px;
+  margin-top: 5px;
 }
 
 div#input-user-info {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    width: 100%;
-    margin-top: 2vh;
-}
-
-div#text-user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-div#text-user-info > * {
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-div#img-user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  margin-top: 2vh;
 }
 
 .input-fix {
-    min-width: 240px;
+  min-width: 240px;
 }
 
 .input-fix-file {
-    width: 230px;
+  width: 230px;
 }
 
-.hl-yellow {
-    background-color: #f1d948;
-    color: #323023;
+.bg-green {
+  background-color: #00a845;
+}
+
+.bg-red {
+  background-color: #df001b;
+}
+
+.color-white {
+  color: #fff;
+}
+
+.w-mapbox {
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+}
+
+.h-mapbox {
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+}
+
+.mapboxgl-ctrl-geocoder input[type="text"] {
+  height: 36px;
 }

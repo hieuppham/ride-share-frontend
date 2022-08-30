@@ -1,17 +1,77 @@
-import { IVehicle } from './vehicle';
-import { EEntityStatus } from './entity-status';
-export interface IUser {
-  id: string | null;
+export interface UserDto {
+  id: string;
   uid: string;
-  gender: string | null;
-  photoUrl: string;
-  dob: Date | null;
-  fullName: string | null;
-  phone: string | null;
   email: string;
-  vehicles: IVehicle[] | null;
-  status: EEntityStatus;
-  userIdImage: string | null;
+  phone: string;
+  dob: Date;
+  photoURL: string;
+  fullName: string;
+  userIdPhotoURL: string;
+  vehicles: VehicleDto[];
+  status: string;
+  gender: string;
+}
+
+export interface SaveUserRequest {
+  uid: string;
+  email: string;
+  photoURL: string;
+}
+
+export interface UpdateUserRequest {
+  id: string;
+  dob: Date;
+  fullName: string;
+  gender: string;
+  phone: string;
+  userIdPhotoURL: string;
+  vehicles: VehicleDto[];
+}
+
+export interface VehicleDto {
+  id: string;
+  type: string;
+  name: string;
+  lpn: string;
+  image: string;
+  lpnImage: string;
+}
+
+export interface FindUserRequest {
+  text: string;
+}
+
+export interface UpdateStatusRequest {
+  id: string;
+  status: string;
+  sendEmail: boolean;
+}
+
+export interface FindUserByIdRequest {
+  id: string;
+}
+
+export interface FindUserByUidRequest {
+  uid: string;
+}
+
+export interface FindUsersResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  gender: string;
+  photoURL: string;
+}
+
+export interface FindUsersAdminResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  gender: string;
+  photoURL: string;
+  status: string;
 }
 
 export interface ITempImage {
@@ -19,8 +79,9 @@ export interface ITempImage {
   vehicleImages: ITempVehilceImage[];
 }
 
-interface ITempVehilceImage {
-  vehicleImage: string;
+export interface ITempVehilceImage {
+  id: number;
+  image: string;
   lpnImage: string;
 }
 

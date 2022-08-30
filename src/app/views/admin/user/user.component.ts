@@ -1,8 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { IUser } from '../../../interface/user';
 import { AdminService } from '../admin.service';
-import { EEntityStatus } from 'src/app/interface/entity-status';
-import { IRequestUpdateStatusDto } from 'src/app/interface/request-update-status-dto';
+import { IConfirm } from 'src/app/interface/util';
+import {
+  FindUsersResponse,
+  FindUsersAdminResponse,
+} from 'src/app/interface/user';
+
 @Component({
   templateUrl: 'user.component.html',
   styleUrls: ['../admin.component.scss'],
@@ -10,41 +13,25 @@ import { IRequestUpdateStatusDto } from 'src/app/interface/request-update-status
 export class UserComponent implements OnInit {
   constructor(private adminService: AdminService) {}
 
-  users: IUser[] = [];
+  users: FindUsersAdminResponse[] = [];
 
-  gender(gender: string): string {
-    return gender == 'male' ? 'Nam' : 'female' ? 'Nữ' : 'Cả nam và nữ';
+  userInfoModalVisible: boolean = false;
+  toggleUserInfoModal(): void {
+    this.userInfoModalVisible = !this.userInfoModalVisible;
   }
 
-  status(status: string): string {
-    let result: string;
-    switch (status) {
-      case 'ACTIVE': {
-        result = 'Hoạt động';
-        break;
-      }
-      case 'INACTIVE': {
-        result = 'Không hoạt động';
-        break;
-      }
-      case 'UNKNOWN': {
-        result = 'Chưa phê duyệt';
-        break;
-      }
-      default: {
-        result = 'Chưa phê duyệt';
-        break;
-      }
-    }
-    return result;
+  chosenUser: FindUsersResponse | undefined;
+  showUserInfo(user: FindUsersResponse) {
+    this.chosenUser = user;
+    this.toggleUserInfoModal();
   }
 
   ngOnInit(): void {
-    this.getAllUsers();
+    this.findAllUsers();
   }
 
-  getAllUsers(): void {
-    this.adminService.getAllUsers().subscribe({
+  private findAllUsers(): void {
+    this.adminService.findAllUsers().subscribe({
       next: (res) => {
         this.users = res;
       },
@@ -53,23 +40,64 @@ export class UserComponent implements OnInit {
     });
   }
 
-  isActive(status: EEntityStatus): boolean {
-    return status.toString() == 'ACTIVE';
+  private updateStatus(id: string, event: any): void {
+    // this.adminService
+    //   .updateUserStatus({
+    //     id: id,
+    //     status: event.target.checked
+    //       ? EntityStatus.ACTIVE
+    //       : EntityStatus.INACTIVE,
+    //   } as IRequestUpdateStatusDto)
+    //   .subscribe({
+    //     next: (res) => {
+    //       this.getAllUsers();
+    //     },
+    //     error: (err) => console.error(err),
+    //   });
   }
 
-  updateStatus(id: string, event: any): void {
-    this.adminService
-      .updateUserStatus({
-        id: id,
-        status: event.target.checked
-          ? EEntityStatus.ACTIVE
-          : EEntityStatus.INACTIVE,
-      } as IRequestUpdateStatusDto)
-      .subscribe({
-        next: (res) => {
-          this.getAllUsers();
-        },
-        error: (err) => console.error(err),
-      });
+  confirm: IConfirm = {
+    title: '',
+    dismiss: '',
+    accept: '',
+    action: '',
+  };
+  confirmModalVisible: boolean = false;
+  toggleConfirmModal(
+    action: string,
+    target?: string | number | any,
+    data?: string | number | boolean | any
+  ): void {
+    switch (action) {
+      case 'updateUserStatus': {
+        this.confirm = {
+          title: 'Cập nhật trạng thái người dùng',
+          dismiss: 'Hủy',
+          accept: 'Cập nhật',
+          action: action,
+          target: target!,
+          data: data!,
+        };
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    this.confirmModalVisible = !this.confirmModalVisible;
+  }
+
+  onAcceptConfirm(): void {
+    switch (this.confirm.action) {
+      case 'updateUserStatus': {
+        this.updateStatus(this.confirm.target!, this.confirm.data!);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    this.confirmModalVisible = !this.confirmModalVisible;
+    this.findAllUsers();
   }
 }

@@ -21,12 +21,10 @@ $enable-rtl: true;
 
 // Prism.js
 @import "examples";
+@import "datatables";
 
-// If you want to add something do it here
-@import "custom";
+@import "mapbox-gl-directions";
 
 @import "mapbox-gl-geocoder";
 
-@import "datatables";
-
-// @import "mapbox-gl-directions";
+@import "custom";

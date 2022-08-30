@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { UserDto } from 'src/app/interface/user';
+import { UserService } from 'src/app/services/user.service';
 
 @Component({
   selector: 'app-admin',
@@ -7,7 +9,21 @@ import { Router } from '@angular/router';
   templateUrl: 'admin.component.html',
 })
 export class AdminComponent implements OnInit {
-  constructor() {}
+  constructor(private userService: UserService) {}
+  user: UserDto | undefined;
+  ngOnInit(): void {
+    this.loadUserInfo();
+  }
 
-  ngOnInit(): void {}
+  private loadUserInfo(): void {
+    const id: string = localStorage.getItem('id')!;
+    this.userService.findUserById(id).subscribe({
+      next: (res) => {
+        this.user = res;
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
 }

@@ -19,6 +19,8 @@ import { UserComponent } from './user/user.component';
 import { RideComponent } from './ride/ride.component';
 import { AdminComponent } from './admin.component';
 import { DefaultHeaderComponent } from './default-header/default-header.component';
+import { PipeModule } from 'src/app/pipes/pipe.module';
+
 @NgModule({
   imports: [
     CardModule,
@@ -34,6 +36,7 @@ import { DefaultHeaderComponent } from './default-header/default-header.componen
     DropdownModule,
     ButtonModule,
     BreadcrumbModule,
+    PipeModule,
   ],
   declarations: [
     UserComponent,

@@ -3,7 +3,6 @@ import { HashLocationStrategy, LocationStrategy } from '@angular/common';
 import { BrowserModule, Title } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ReactiveFormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
 import {
   PERFECT_SCROLLBAR_CONFIG,
   PerfectScrollbarConfigInterface,
@@ -95,7 +94,6 @@ const APP_CONTAINERS = [DefaultLayoutComponent];
     },
     IconSetService,
     Title,
-    DatePipe,
   ],
   bootstrap: [AppComponent],
 })

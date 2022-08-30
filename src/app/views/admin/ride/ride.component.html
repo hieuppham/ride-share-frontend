@@ -1,52 +1,53 @@
 <c-row>
   <c-col xs>
     <c-card class="mb-4">
-      <c-card-header>Chuyến</c-card-header>
+      <c-card-header>Hànnh trình</c-card-header>
       <c-card-body>
-        <table [hover]="true" [responsive]="true" [striped]="true" align="middle" cTable class="mb-0 border">
+        <table
+          [hover]="true"
+          [responsive]="true"
+          [striped]="true"
+          align="middle"
+          cTable
+          class="mb-0 border"
+        >
           <thead cTableColor="light">
             <tr>
-              <th class="text-center">
-              </th>
-              <th class="text-center">Phương tiện</th>
-              <th>Xuất phát</th>
-              <th>Kết thúc</th>
+              <th>Từ</th>
+              <th>Đến</th>
+              <th class="text-center">Bắt đầu</th>
+              <th class="text-center">Kết thúc dự kiến</th>
               <th>Khoảng cách</th>
               <th class="text-center">Trạng thái</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let ride of rideResponseDto; let i = index">
+            <tr *ngFor="let ride of rides; let i = index">
+              <td>{{ ride.startPointTitle }}</td>
+              <td>{{ ride.endPointTitle }}</td>
               <td class="text-center">
-                <c-avatar size="md" src="{{ ride.user.photoUrl }}"></c-avatar>
-              </td>
-              <td class="text-center">
-                {{ vehicle(ride.vehicle.type)}}
-              </td>
-              <td class="text-center">
-                {{'start'}}
+                {{ ride.startTime | dateInArray }}
               </td>
               <td>
                 <div class="text-center">
-                  {{ 'end' }}
+                  {{ ride.endTime | dateInArray }}
                 </div>
               </td>
               <td>
-                <div>
-                  {{ ride.distance + ' km' }}
-                </div>
+                <div>{{ ride.distance | metric }}</div>
               </td>
               <td class="text-center">
-                {{status(ride.status.toString())}}
+                {{ ride.status | status }}
               </td>
               <td class="text-center">
-                <input id="ride-status" type="checkbox" [checked]="isActive(ride.status)"
-                  (change)="updateStatus(ride._id, $event)" class="btn-action">
                 <button
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action">Sửa</button>
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width btn-action"
+                  (click)="toggleRideInfoModal(ride.id)"
+                >
+                  Chi tiết
+                </button>
               </td>
-
             </tr>
           </tbody>
         </table>
@@ -54,3 +55,150 @@
     </c-card>
   </c-col>
 </c-row>
+
+<c-modal
+  #rideInfoModal
+  alignment="center"
+  id="cofirmModal"
+  [visible]="rideInfoModalVisible"
+  scrollable
+>
+  <ng-container *ngIf="rideDetailInfo">
+    <c-modal-header>
+      <h5 cModalTitle>Thông tin</h5>
+      <button
+        (click)="toggleRideInfoModal()"
+        class="btn-close"
+        aria-label="Close"
+      ></button>
+    </c-modal-header>
+    <c-modal-body>
+      <div class="d-flex flex-column align-items-center">
+        <c-avatar
+          id="user-avatar"
+          shape="rounded-1"
+          size="xl"
+          src="{{ rideDetailInfo.user.photoURL }}"
+          class="avatar avatar-md rounded-1 text-primary"
+        >
+        </c-avatar>
+        <div class="d-flex flex-column mt-2">
+          <p>
+            <span class="hl hl-green">{{
+              rideDetailInfo.startTime | dateInArray
+            }}</span>
+            <span class="hl hl-red">{{
+              rideDetailInfo.endTime | dateInArray
+            }}</span>
+          </p>
+        </div>
+        <div class="d-flex flex-column mt-2">
+          <p>
+            <ng-container
+              *ngFor="let c of rideDetailInfo.criterions; let i = index"
+            >
+              <span class="hl hl-lightgrey">{{ c }}</span>
+            </ng-container>
+          </p>
+          <p>
+            <span class="hl hl-lightgrey">{{ rideDetailInfo.note }}</span>
+          </p>
+          <p>
+            <span class="hl hl-lightgrey">{{
+              rideDetailInfo.vehicle.type | vehicle
+            }}</span>
+            <span class="hl hl-lightgrey">{{
+              rideDetailInfo.vehicle.name
+            }}</span>
+            <span class="hl hl-lightgrey">{{
+              rideDetailInfo.vehicle.lpn
+            }}</span>
+          </p>
+        </div>
+
+        <div class="d-flex flex-column mt-2">
+          <p>
+            <span class="hl hl-lightgrey">{{
+              rideDetailInfo.user.fullName
+            }}</span>
+            <span class="hl hl-lightgrey">{{
+              rideDetailInfo.user.gender | gender
+            }}</span>
+          </p>
+          <p>
+            <span class="hl hl-lightgrey">{{ rideDetailInfo.user.email }}</span>
+          </p>
+          <p>
+            <span class="hl hl-lightgrey">{{ rideDetailInfo.user.phone }}</span>
+          </p>
+        </div>
+      </div>
+    </c-modal-body>
+    <c-modal-footer>
+      <div class="d-flex flex-row justify-content-between w-100">
+        <button
+          class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
+          cButton
+          type="button"
+          (click)="toggleRideInfoModal()"
+        >
+          {{ confirm.dismiss }}
+        </button>
+        <button
+          class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+          cButton
+          type="button"
+          (click)="
+            toggleConfirmModal(
+              'updateRideStatus',
+              rideDetailInfo.id,
+              rideDetailInfo.status
+            )
+          "
+        >
+          {{ rideDetailInfo.status | updateStatus }}
+        </button>
+      </div>
+    </c-modal-footer>
+  </ng-container>
+</c-modal>
+
+<!-- modal confirm  -->
+<c-modal
+  #cofirmModal
+  alignment="center"
+  id="cofirmModal"
+  [visible]="confirmModalVisible"
+  scrollable
+>
+  <c-modal-header>
+    <h5 cModalTitle>{{ confirm.title }}<b> </b></h5>
+    <button
+      (click)="toggleConfirmModal('close')"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <!-- div thong tin chuyen di -->
+  <c-modal-footer>
+    <div class="d-flex flex-row justify-content-between w-100">
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="toggleConfirmModal('close')"
+      >
+        {{ confirm.dismiss }}
+      </button>
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="onAcceptConfirm()"
+      >
+        {{ confirm.accept }}
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+<!-- end modal confirm -->

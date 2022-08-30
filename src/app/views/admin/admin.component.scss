@@ -10,8 +10,11 @@
 .btn-action {
     margin-right: 5px;
     margin-left: 5px;
-    min-width: fit-content;
-    width:auto;
+}
+
+.fit-width {
+  min-width: fit-content;
+  width:auto;
 }
 
 .green-background-white-text {
@@ -33,3 +36,76 @@
     background-color: #ce5c18;
     color: white;
   }
+
+  .list-item {
+    padding: 10px;
+    margin: 0 0 15px 0;
+    min-width: 100%;
+}
+
+.list-item > p {
+    margin-bottom: 15px;
+    margin-top: 5px;
+}
+
+div#user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+div#input-user-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 2vh;
+}
+
+div#text-user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+div#text-user-info > * {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+div#img-user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.input-fix {
+    min-width: 240px;
+}
+
+.input-fix-file {
+    width: 230px;
+}
+
+.hl-yellow {
+    background-color: #f1d948;
+    color: #323023;
+}
+
+div#vehicles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+div.vehicle-item {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+div.vehicle-item > * {
+  // min-width: 100px;
+  margin :10px 10px 0 0 ;
+  font-size: 12px;
+}

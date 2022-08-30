@@ -3,16 +3,21 @@
     <c-card class="mb-4">
       <c-card-header>Người dùng</c-card-header>
       <c-card-body>
-        <table [hover]="true" [responsive]="true" [striped]="true" align="middle" cTable class="mb-0 border">
+        <table
+          [hover]="true"
+          [responsive]="true"
+          [striped]="true"
+          align="middle"
+          cTable
+          class="mb-0 border"
+        >
           <thead cTableColor="light">
             <tr>
-              <th class="text-center">
-              </th>
+              <th class="text-center"></th>
               <th>Người dùng</th>
               <th class="text-center">Giới tính</th>
               <th>Email</th>
               <th class="text-center">Số điện thoại</th>
-              <th>Phương tiện</th>
               <th class="text-center">Trạng thái</th>
               <th class="text-center"></th>
             </tr>
@@ -20,13 +25,13 @@
           <tbody>
             <tr *ngFor="let user of users; let i = index">
               <td class="text-center">
-                <c-avatar size="md" src="{{ user.photoUrl }}"></c-avatar>
+                <c-avatar size="md" src="{{ user.photoURL }}"></c-avatar>
               </td>
               <td>
-                <div>{{ user.fullName}}</div>
+                <div>{{ user.fullName }}</div>
               </td>
               <td class="text-center">
-                {{gender(user.gender!)}}
+                {{ user.gender | gender }}
               </td>
               <td>
                 <div class="clearfix">
@@ -38,19 +43,17 @@
                   {{ user.phone }}
                 </div>
               </td>
-              <td>
-                {{ user.vehicles }}
+              <td class="text-center">
+                {{ user.status | status }}
               </td>
               <td class="text-center">
-                {{status(user.status.toString())}}
+                <button
+                  (click)="showUserInfo(user)"
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action fit-width"
+                >
+                  Chi tiết
+                </button>
               </td>
-              <td class="text-center">
-                <input id="active-user" type="checkbox" [checked]="isActive(user.status)"
-                  (change)="updateStatus(user.id!, $event)" class="btn-action">
-                <button [cModalToggle]="userInfoModal.id"
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action">Sửa</button>
-              </td>
-
             </tr>
           </tbody>
         </table>
@@ -59,12 +62,125 @@
   </c-col>
 </c-row>
 
-<c-modal #userInfoModal alignment="center" id="user-info-modal" [visible]="false">
+<c-modal
+  #userInfoModal
+  alignment="center"
+  size="xl"
+  id="user-info-modal"
+  [visible]="userInfoModalVisible"
+  scrollable
+>
   <c-modal-header>
-    <h5 cModalTitle>Thông tin chuyến đi</h5>
-    <button [cModalToggle]="userInfoModal.id" id="btn-close-modal"
-      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input fit-width" cButton>
-      Đóng
-    </button>
+    <h5 cModalTitle>Thông tin người dùng</h5>
+    <button
+      (click)="toggleUserInfoModal()"
+      id="btn-close-modal"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
   </c-modal-header>
   <c-modal-body>
+    <div id="user-info">
+      <c-avatar
+        id="user-avatar"
+        shape="rounded-1"
+        size="xl"
+        src="{{ chosenUser?.photoURL }}"
+        class="avatar avatar-md rounded-1 text-primary"
+      >
+      </c-avatar>
+
+      <div id="input-user-info">
+        <div id="user-id-image" class="d-flex flex-column align-items-center">
+          <!-- <img
+            *ngIf="chosenUser?.userIdPhotoURL"
+            [src]="chosenUser?.userIdPhotoURL"
+            height="240px"
+            width="240px"
+          /> -->
+        </div>
+
+        <!-- <div id="text-user-info">
+          <p>id: {{chosenUser?.id}}</p>
+          <p>Họ tên: {{chosenUser?.fullName}}</p>
+          <p>Giới tính: {{chosenUser?.gender}}</p>
+          <p>Ngày sinh: {{chosenUser?.dob}}</p>
+          <p>{{chosenUser?.phone}}</p>
+          <p>{{chosenUser?.email}}</p>
+        </div> -->
+
+        <!-- <div id="vehicle-info">
+          <div>
+            <div *ngFor="let v of chosenUser?.vehicles; let i = index">
+              <div class="vehicle-item">
+                <p>{{vehicle(v.type)}}</p>
+
+                <p>{{v.name}}</p>
+
+                <img *ngIf="v.image" [src]="v.image" height="240px" width="240px" />
+
+
+                <p>{{v.lpn}}</p>
+                <img *ngIf="v.lpnImage" [src]="v.lpnImage" height="240px" width="240px" />
+              </div>
+            </div>
+          </div> -->
+        <!-- </div>-->
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <div class="d-flex flex-row justify-content-between w-100">
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
+        cButton
+        type="button"
+      ></button>
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+        cButton
+        type="button"
+      ></button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+
+<!-- modal confirm  -->
+<c-modal
+  #cofirmModal
+  alignment="center"
+  id="cofirmModal"
+  [visible]="confirmModalVisible"
+  scrollable
+>
+  <c-modal-header>
+    <h5 cModalTitle>{{ confirm.title }}<b> </b></h5>
+    <button
+      (click)="toggleConfirmModal('close')"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <!-- div thong tin chuyen di -->
+  <c-modal-footer>
+    <div class="d-flex flex-row justify-content-between w-100">
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="toggleConfirmModal('close')"
+      >
+        {{ confirm.dismiss }}
+      </button>
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="onAcceptConfirm()"
+      >
+        {{ confirm.accept }}
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+<!-- end modal confirm -->
