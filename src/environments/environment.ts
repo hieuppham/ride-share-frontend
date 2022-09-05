@@ -12,6 +12,6 @@ export const environment = {
     messagingSenderId: '694722960403',
     appId: '1:694722960403:web:1117f30ec4a73a6097b3e6',
   },
-  adminUid: '630babae63fbfa32e3dfcc1e',
-  apiUrl: 'https://ride-share-2022.herokuapp.com/v1',
+  adminEmail: 'phamtrunghieu6d@gmail.com',
+  apiUrl: 'http://localhost:8080/v1',
 };
