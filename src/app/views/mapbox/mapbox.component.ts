@@ -149,7 +149,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.userService.findUserById(localStorage.getItem('id')!).subscribe({
       next: (res: UserDto) => {
         this.user = res;
-        this.userIsAdmin = res.id == environment.adminUid;
+        this.userIsAdmin = res.email == environment.adminEmail;
         if (res.status == this.USER_STATUS_UNKNOWN) {
           this.formUserInfo.patchValue({ id: res.id, email: res.email });
           this.toggleConfirmModal('newUser');
