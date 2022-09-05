@@ -57,4 +57,20 @@ table#table_id {
 
 .w-fit {
   width: fit-content;
+  min-width: fit-content;
+}
+
+.btn {
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+textarea {
+  outline: none !important;
+}
+#form-ride-share > div:nth-child(2) > div {
+  height: 70px;
+}
+
+button:hover {
 }

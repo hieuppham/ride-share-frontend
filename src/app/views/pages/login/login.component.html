@@ -3,27 +3,35 @@
     <c-row class="justify-content-center">
       <c-col md="8">
         <c-card-group>
-          <c-card [ngStyle]="{'width.%': 44}" class="p-4">
+          <c-card [ngStyle]="{ 'width.%': 44 }" class="p-4">
             <c-card-body>
               <h2>Đăng nhập</h2>
-              <p class="text-medium-emphasis">Hãy sử dụng tài khoản Google của bạn</p>
+              <p class="text-medium-emphasis">
+                Hãy sử dụng tài khoản Google của bạn
+              </p>
               <button
                 class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl green-background-white-text"
-                (click)="signIn()">Đăng nhập với <svg cIcon name="cibGoogle"></svg>
+                (click)="signIn()"
+              >
+                Đăng nhập với <svg cIcon name="cibGoogle"></svg>
               </button>
               <div id="firebase-auth-container"></div>
             </c-card-body>
           </c-card>
-          <c-card [ngStyle]="{'width.%': 44}" class="green-background-white-text p-4">
+          <c-card
+            [ngStyle]="{ 'width.%': 44 }"
+            class="green-background-white-text p-4"
+          >
             <c-card-body>
               <div>
                 <h2>Đăng ký</h2>
-                <p>
-                  Nếu bạn chưa có tài khoản Google, bạn có thể tạo qua đây.
-                </p>
-                <a type="button" target="_blank"
+                <p>Nếu bạn chưa có tài khoản Google, bạn có thể tạo qua đây.</p>
+                <a
+                  type="button"
+                  target="_blank"
                   href=" https://accounts.google.com/signup/v2/webcreateaccount?flowName=GlifWebSignIn&flowEntry=SignUp"
-                  class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl white-background-black-text">
+                  class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl white-background-black-text"
+                >
                   Đăng ký tài khoản <svg cIcon name="cibGoogle"></svg>
                 </a>
               </div>
@@ -34,3 +42,20 @@
     </c-row>
   </c-container>
 </div>
+
+<c-modal
+  #errorModal
+  alignment="center"
+  id="error"
+  [visible]="errorModalVisible"
+  scrollable
+>
+  <c-modal-header>
+    <button
+      (click)="toggleErrorModal()"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <c-modal-body></c-modal-body>
+</c-modal>

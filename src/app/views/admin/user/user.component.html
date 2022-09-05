@@ -48,7 +48,7 @@
               </td>
               <td class="text-center">
                 <button
-                  (click)="showUserInfo(user)"
+                  (click)="toggleUserInfoModal(user.id)"
                   class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action fit-width"
                 >
                   Chi tiết
@@ -65,9 +65,10 @@
 <c-modal
   #userInfoModal
   alignment="center"
-  size="xl"
+  size="lg"
   id="user-info-modal"
   [visible]="userInfoModalVisible"
+  *ngIf="userDetailInfo"
   scrollable
 >
   <c-modal-header>
@@ -85,47 +86,68 @@
         id="user-avatar"
         shape="rounded-1"
         size="xl"
-        src="{{ chosenUser?.photoURL }}"
+        src="{{ userDetailInfo.photoURL }}"
         class="avatar avatar-md rounded-1 text-primary"
       >
       </c-avatar>
+      <div class="d-flex flex-row w-100">
+        <div id="input-user-info">
+          <div id="user-id-image" class="d-flex flex-column align-items-center">
+            <img
+              *ngIf="userDetailInfo.userIdPhotoURL"
+              [src]="userDetailInfo.userIdPhotoURL"
+              height="240px"
+              width="240px"
+            />
+          </div>
 
-      <div id="input-user-info">
-        <div id="user-id-image" class="d-flex flex-column align-items-center">
-          <!-- <img
-            *ngIf="chosenUser?.userIdPhotoURL"
-            [src]="chosenUser?.userIdPhotoURL"
-            height="240px"
-            width="240px"
-          /> -->
+          <div id="text-user-info" class="align-items-start">
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.fullName
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.dob | dateInMilisec
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.gender | gender
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.phone
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.email
+            }}</span>
+          </div>
         </div>
-
-        <!-- <div id="text-user-info">
-          <p>id: {{chosenUser?.id}}</p>
-          <p>Họ tên: {{chosenUser?.fullName}}</p>
-          <p>Giới tính: {{chosenUser?.gender}}</p>
-          <p>Ngày sinh: {{chosenUser?.dob}}</p>
-          <p>{{chosenUser?.phone}}</p>
-          <p>{{chosenUser?.email}}</p>
-        </div> -->
-
-        <!-- <div id="vehicle-info">
-          <div>
-            <div *ngFor="let v of chosenUser?.vehicles; let i = index">
-              <div class="vehicle-item">
-                <p>{{vehicle(v.type)}}</p>
-
-                <p>{{v.name}}</p>
-
-                <img *ngIf="v.image" [src]="v.image" height="240px" width="240px" />
-
-
-                <p>{{v.lpn}}</p>
-                <img *ngIf="v.lpnImage" [src]="v.lpnImage" height="240px" width="240px" />
-              </div>
+      </div>
+      <div id="vehicle-info" class="w-100 h-100">
+        <ng-container *ngFor="let v of userDetailInfo.vehicles; let i = index">
+          <div class="d-flex my-3 justify-content-between">
+            <div class="d-flex flex-column align-items-center w-100">
+              <span class="hl hl-lightgrey w-fit">{{
+                v.type | vehicle | uppercase
+              }}</span>
             </div>
-          </div> -->
-        <!-- </div>-->
+            <div class="d-flex flex-column w-100">
+              <span class="hl hl-lightgrey w-fit mb-2 mx-0">{{ v.name }}</span>
+              <img
+                *ngIf="v.image"
+                [src]="v.image"
+                height="240px"
+                width="240px"
+              />
+            </div>
+            <div class="d-flex flex-column w-100">
+              <span class="hl hl-lightgrey w-fit mb-2 mx-0">{{ v.lpn }}</span>
+              <img
+                *ngIf="v.lpnImage"
+                [src]="v.lpnImage"
+                height="240px"
+                width="240px"
+              />
+            </div>
+          </div>
+        </ng-container>
       </div>
     </div>
   </c-modal-body>
@@ -135,12 +157,24 @@
         class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
         cButton
         type="button"
-      ></button>
+      >
+        Hủy
+      </button>
       <button
         class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
         cButton
         type="button"
-      ></button>
+        (click)="
+          toggleConfirmModal(
+            'updateUserStatus',
+            userDetailInfo.id,
+            userDetailInfo.status
+          );
+          toggleUserInfoModal()
+        "
+      >
+        {{ userDetailInfo.status | updateStatus }}
+      </button>
     </div>
   </c-modal-footer>
 </c-modal>
@@ -161,7 +195,20 @@
       aria-label="Close"
     ></button>
   </c-modal-header>
-  <!-- div thong tin chuyen di -->
+  <c-modal-body>
+    <div class="d-flex justify-content-center">
+      <label class="px-1" for="send-email"
+        >Gửi email thông báo tới người dùng</label
+      >
+      <input
+        id="send-email"
+        class="px-1"
+        type="checkbox"
+        [checked]="sendEmail"
+        (change)="toggleSendEmail()"
+      />
+    </div>
+  </c-modal-body>
   <c-modal-footer>
     <div class="d-flex flex-row justify-content-between w-100">
       <button

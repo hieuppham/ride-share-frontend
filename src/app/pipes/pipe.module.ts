@@ -7,6 +7,7 @@ import { VehiclePipe } from './vehicle.pipe';
 import { AvatarPipe } from './avatar.pipe';
 import { UpdateStatusPipe } from './update-status.pipe';
 import { MetricPipe } from './metric.pipe';
+import { DateInMilisecPipe } from './date-in-milisec.pipe';
 
 @NgModule({
   declarations: [
@@ -17,6 +18,7 @@ import { MetricPipe } from './metric.pipe';
     AvatarPipe,
     UpdateStatusPipe,
     MetricPipe,
+    DateInMilisecPipe,
   ],
   imports: [CommonModule],
   exports: [
@@ -27,6 +29,7 @@ import { MetricPipe } from './metric.pipe';
     AvatarPipe,
     UpdateStatusPipe,
     MetricPipe,
+    DateInMilisecPipe,
   ],
 })
 export class PipeModule {}

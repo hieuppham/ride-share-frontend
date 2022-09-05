@@ -55,14 +55,13 @@
           placeholder="Tiêu chí"
         />
         <div
-          id="text-share-wrapper"
-          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0 px-1 py-1"
         >
           <textarea
             formControlName="note"
             id="note"
             cols="27"
-            rows="5"
+            rows="10"
             placeholder="Ghi chú"
           ></textarea>
         </div>
@@ -107,9 +106,8 @@
     ></path>
   </svg>
   <input
-    type="text"
     class="mapboxgl-ctrl-geocoder--input"
-    placeholder="      Tìm người dùng"
+    placeholder="Tìm người dùng"
     title="Tìm người dùng theo SĐT, email và tên"
     aria-label="Tìm người dùng theo SĐT, email và tên"
     (keyup)="onSearchUser($event)"
@@ -217,7 +215,7 @@
       </div>
     </ng-container>
   </c-modal-body>
-  <c-modal-footer>
+  <!-- <c-modal-footer>
     <div class="modal-footer">
       <button
         class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
@@ -236,7 +234,7 @@
         Liên hệ
       </button>
     </div>
-  </c-modal-footer>
+  </c-modal-footer> -->
 </c-modal>
 <!-- end search user modal -->
 
@@ -262,6 +260,10 @@
     <!-- inactive ride -->
     <ng-container *ngFor="let ride of myRide; let i = index">
       <div class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl list-item">
+        <h5 class="text-center pb-2">
+          <span class="hl hl-lightgrey">{{ ride.startPointTitle }}</span
+          ><span class="hl hl-lightgrey">{{ ride.endPointTitle }}</span>
+        </h5>
         <p class="text-center">
           <span class="hl hl-lightgrey">{{ ride.startTime | dateInArray }}</span
           ><span class="hl hl-lightgrey">{{ ride.endTime | dateInArray }}</span>
@@ -273,7 +275,9 @@
           </ng-container>
         </p>
         <div class="d-flex justify-content-between">
-          <button>
+          <button
+            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-red color-white px-3"
+          >
             {{ !isActiveRide(ride.status) ? "Chia sẻ" : "Dừng chia sẻ" }}
           </button>
           <button
@@ -282,6 +286,7 @@
               toggleFormSaveRide(true);
               toggleMyRidesModal()
             "
+            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-green color-white px-3"
           >
             Cập nhật
           </button>
@@ -383,70 +388,94 @@
   #rideInfoModal
   alignment="center"
   id="rideInfoModal"
-  *ngIf="rideInfoModalVisible"
   [visible]="rideInfoModalVisible"
 >
   <c-modal-header>
     <h5 cModalTitle>Thông tin hành trình</h5>
     <button
-      [cModalToggle]="rideInfoModal.id"
       id="btn-close-modal"
       class="btn-close"
       aria-label="Close"
+      (click)="this.toggleRideInfoModal()"
     ></button>
   </c-modal-header>
   <c-modal-body>
-    <!-- <h3 class="text-center">{{chosenRide?.startPoint!.properties!['title']}} ->
-            {{chosenRide?.endPoint!.properties!['title']}}</h3> -->
-    <!-- <p class="text-center">
-      <span class="hl hl-green">{{ dateToStr(chosenRide?.startTime) }}</span
-      ><span class="hl hl-red">{{ dateToStr(chosenRide?.endTime) }}</span>
-    </p> -->
-    <!-- <p>Khoảng cách <span class="hl hl-yellow">{{chosenRide?.distance}} km</span></p> -->
-    <!-- <p>
-      Phương tiện
-      <span class="hl hl-deepblue"
-        >{{ vehicle(chosenRide?.vehicle?.type!) }}
-        {{ chosenRide?.vehicle?.name }} {{ chosenRide?.vehicle?.lpn }}</span
+    <div
+      class="d-flex flex-column align-items-center"
+      *ngIf="this.rideDetailInfo"
+    >
+      <c-avatar
+        id="user-avatar"
+        shape="rounded-1"
+        size="xl"
+        *ngIf="this.rideDetailInfo"
+        src="{{ this.rideDetailInfo.user.photoURL }}"
+        class="avatar avatar-md rounded-1 text-primary"
       >
-    </p> -->
-    <!-- <p>
-      Yêu cầu
-      <ng-container *ngFor="let c of chosenRide?.criterions">
-        <span class="hl hl-lightgrey">{{ c }}</span>
-      </ng-container>
-    </p>
+      </c-avatar>
+      <div class="d-flex flex-column align-items-center my-3">
+        <h5 class="mb-3">
+          <span class="hl hl-green">{{
+            this.rideDetailInfo.startPointTitle
+          }}</span>
+          <span class="hl hl-red">{{ this.rideDetailInfo.endPointTitle }}</span>
+        </h5>
+        <span class="mb-2"
+          ><span class="hl hl-green">{{
+            this.rideDetailInfo.startTime | dateInArray
+          }}</span>
+          <span class="hl hl-red">{{
+            this.rideDetailInfo.endTime | dateInArray
+          }}</span></span
+        >
 
-    <hr />
-    <p>
-      Chủ xe <b>{{ chosenRide?.user?.fullName }}</b>
-    </p>
-    <p>
-      Giới tính <b>{{ gender(chosenRide?.user?.gender!) }}</b>
-    </p>
-    <p>
-      Số điện thoại <b>{{ chosenRide?.user?.phone }}</b>
-    </p>
-    <p>
-      Email <b>{{ chosenRide?.user?.email }}</b>
-    </p>
-    <hr />
-    <p>Ghi chú</p>
-    <span>
-      <b>{{ chosenRide?.note }}</b></span
-    > -->
-  </c-modal-body>
-  <c-modal-footer>
-    <div class="modal-footer">
-      <button
-        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-        cButton
-        [cModalToggle]="rideInfoModal.id"
-      >
-        Liên hệ chủ xe
-      </button>
+        <span class="hl hl-lightgrey mb-2">{{
+          this.rideDetailInfo.distance | metric
+        }}</span>
+
+        <span class="mb-2">
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.vehicle.type | vehicle
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.vehicle.name
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.vehicle.lpn
+          }}</span>
+        </span>
+
+        <span class="d-flex flex-column w-100 mt-3">
+          <span class="mb-2">
+            <ng-container *ngFor="let c of this.rideDetailInfo.criterions">
+              <span class="hl hl-lightgrey">{{ c }}</span></ng-container
+            >
+          </span>
+          <span class="hl hl-lightgrey">
+            {{ this.rideDetailInfo.note }}
+          </span>
+        </span>
+      </div>
+      <div class="d-flex flex-column align-items-start w-100">
+        <span class="mb-2">
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.fullName
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.gender | gender
+          }}</span></span
+        >
+        <span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.phone
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.email
+          }}</span></span
+        >
+      </div>
     </div>
-  </c-modal-footer>
+  </c-modal-body>
 </c-modal>
 
 <!-- user info -->
@@ -551,6 +580,7 @@
 
               <input
                 type="text"
+                formControlName="email"
                 class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
                 placeholder="Email"
                 readonly
@@ -707,3 +737,11 @@
     Danh sách hành trình
   </button>
 </div>
+
+<img
+  #imagePopup
+  id="popup-image"
+  class="d-none"
+  alt="popup-image"
+  style="border-radius: 50%; width: 40px"
+/>

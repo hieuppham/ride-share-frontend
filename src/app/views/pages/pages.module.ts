@@ -10,6 +10,7 @@ import {
   CardModule,
   FormModule,
   GridModule,
+  ModalModule,
 } from '@coreui/angular';
 import { IconModule } from '@coreui/icons-angular';
 
@@ -23,6 +24,7 @@ import { IconModule } from '@coreui/icons-angular';
     GridModule,
     IconModule,
     FormModule,
+    ModalModule,
   ],
 })
 export class PagesModule {}

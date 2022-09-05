@@ -1,4 +1,4 @@
-export interface IConfirm {
+export interface Confirm {
   title: string;
   dismiss: string;
   accept: string;

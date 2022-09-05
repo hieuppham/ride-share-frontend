@@ -8,6 +8,7 @@ const MAPBOX_OPTIONS: MapboxOptions = {
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v11',
   zoom: 0,
+  center: [106.95859399778641, 16.78288117290175],
 };
 
 const GEOCODER_OPT_END_POINT: any = {
@@ -41,6 +42,18 @@ const GEOCODER_OPT_SEARCH: any = {
   zoom: 18,
   placeholder: '       Khu vực',
   mapboxgl: mapboxgl,
+};
+
+interface Color {
+  [key: string]: string;
+}
+
+export const COLOR: Color = {
+  pink: '#e3adbe',
+  'pink-dark': '#b75676',
+  blue: '#4fd2f4',
+  'blue-dark': '#3a63b8',
+  red: '#f20007',
 };
 
 export {

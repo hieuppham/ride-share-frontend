@@ -17,7 +17,7 @@ import { VehiclePipe } from 'src/app/pipes/vehicle.pipe';
 import { DateInArrayPipe } from 'src/app/pipes/date-in-array.pipe';
 import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
-
+import { FormsModule } from '@angular/forms';
 @NgModule({
   imports: [
     CardModule,
@@ -29,6 +29,7 @@ import { MetricPipe } from 'src/app/pipes/metric.pipe';
     CommonModule,
     ToastModule,
     PipeModule,
+    FormsModule,
   ],
   declarations: [MapboxComponent],
   providers: [VehiclePipe, DateInArrayPipe, AvatarPipe, MetricPipe],

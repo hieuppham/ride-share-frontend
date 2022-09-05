@@ -47,12 +47,13 @@ export interface UpdateStatusRequest {
   sendEmail: boolean;
 }
 
-export interface FindUserByIdRequest {
-  id: string;
-}
-
 export interface FindUserByUidRequest {
   uid: string;
+}
+
+export interface FindShortUserInfoResponse {
+  id: string;
+  photoURL: string;
 }
 
 export interface FindUsersResponse {

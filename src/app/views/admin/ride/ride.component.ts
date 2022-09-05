@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { AdminService } from '../admin.service';
-import { IConfirm } from 'src/app/interface/util';
+import { Confirm } from 'src/app/interface/util';
 import {
-  FindRideDetailReponse,
+  FindRideDetailResponse,
   FindRidesAdminResponse,
 } from 'src/app/interface/ride';
 import { RideService } from 'src/app/services/ride.service';
+import { UpdateStatusRequest } from 'src/app/interface/user';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
 @Component({
   templateUrl: './ride.component.html',
   styleUrls: ['../admin.component.scss'],
@@ -13,7 +15,8 @@ import { RideService } from 'src/app/services/ride.service';
 export class RideComponent implements OnInit {
   constructor(
     private adminService: AdminService,
-    private rideService: RideService
+    private rideService: RideService,
+    private updateStatusPipe: UpdateStatusPipe
   ) {}
 
   rides: FindRidesAdminResponse[] = [];
@@ -25,7 +28,7 @@ export class RideComponent implements OnInit {
     });
   }
 
-  confirm: IConfirm = {
+  confirm: Confirm = {
     title: '',
     dismiss: '',
     accept: '',
@@ -40,12 +43,12 @@ export class RideComponent implements OnInit {
     switch (action) {
       case 'updateRideStatus': {
         this.confirm = {
-          title: 'Cập nhật trạng thái chuyến đi',
+          title: 'Cập nhật trạng thái hành trình',
           dismiss: 'Hủy',
           accept: 'Cập nhật',
           action: action,
           target: target!,
-          data: data!,
+          data: this.updateStatusPipe.transform(data!, 'statusValue'),
         };
         break;
       }
@@ -56,7 +59,7 @@ export class RideComponent implements OnInit {
     this.confirmModalVisible = !this.confirmModalVisible;
   }
 
-  rideDetailInfo: FindRideDetailReponse | undefined;
+  rideDetailInfo: FindRideDetailResponse | undefined;
   rideInfoModalVisible: boolean = false;
   toggleRideInfoModal(id?: string): void {
     if (id) {
@@ -69,10 +72,31 @@ export class RideComponent implements OnInit {
     this.rideInfoModalVisible = !this.rideInfoModalVisible;
   }
 
+  private updateRideStatus(): void {
+    const body: UpdateStatusRequest = {
+      id: this.confirm.target,
+      status: this.confirm.data,
+      sendEmail: this.sendEmail,
+    };
+    this.rideService.updateRideStatus(body).subscribe({
+      next: (res) => {
+        console.log(res);
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
+
+  sendEmail: boolean = true;
+  toggleSendEmail(): void {
+    this.sendEmail = !this.sendEmail;
+  }
+
   onAcceptConfirm(): void {
     switch (this.confirm.action) {
       case 'updateRideStatus': {
-        // this.rideService.updateRideStatus()
+        this.updateRideStatus();
         break;
       }
       default: {

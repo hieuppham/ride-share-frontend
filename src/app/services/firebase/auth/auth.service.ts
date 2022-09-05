@@ -30,12 +30,14 @@ export class AuthService {
               localStorage.setItem('id', res.id);
               this.router.navigate(['/map']);
             },
-            error: (err) => console.error(err),
+            error: (err) => {
+              throw err;
+            },
           });
       })
       .catch((error) => {
-        const credential: OAuthCredential | null =
-          GoogleAuthProvider.credentialFromError(error);
+        // const credential: OAuthCredential | null =
+        //   GoogleAuthProvider.credentialFromError(error);
       });
   }
 

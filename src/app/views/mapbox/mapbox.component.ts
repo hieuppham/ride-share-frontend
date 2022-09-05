@@ -1,16 +1,31 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnInit,
+  QueryList,
+  ViewChild,
+  ViewChildren,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Map, EventData, MapboxEvent, Marker, LngLatLike } from 'mapbox-gl';
+import {
+  Map,
+  EventData,
+  MapboxEvent,
+  Marker,
+  LngLatLike,
+  MapLayerMouseEvent,
+  LineLayer,
+  Popup,
+} from 'mapbox-gl';
 import * as MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import * as MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
 import { Path, Route } from 'src/app/interface/route';
-import { GeoJSONSource } from 'mapbox-gl';
 import { RideService } from '../../services/ride.service';
 import { StorageService } from '../../services/firebase/storage/storage.service';
 import {
-  Point,
   Feature,
   FeatureCollection,
   LineString,
@@ -24,13 +39,13 @@ import {
   FindUsersResponse,
 } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
-import { FindRidesResponse, SaveRideRequest } from 'src/app/interface/ride';
+import {
+  FindRidesResponse,
+  SaveRideRequest,
+  FindRideDetailResponse,
+} from 'src/app/interface/ride';
 
 import {
-  pointToCoordinates,
-  toFeature,
-  dateArrayToString,
-  enumToStatus,
   dateArrayToDateTimeLocal,
   extractStartPoint,
   extractEndPoint,
@@ -39,10 +54,16 @@ import {
   getStartSymbolLayer,
   getEndPointLayer,
   getEndSymbolLayer,
+  addPopupToLayer,
+  getPathCasingLayer,
 } from './util/geojson.function';
-import { IConfirm } from 'src/app/interface/util';
+import { Confirm } from 'src/app/interface/util';
 
-import { GEOCODER_OPT_SEARCH, MAPBOX_OPTIONS } from './util/geojson.constant';
+import {
+  GEOCODER_OPT_SEARCH,
+  MAPBOX_OPTIONS,
+  COLOR,
+} from './util/geojson.constant';
 import { initView } from './util/view.config';
 import { Error } from 'src/app/interface/util';
 import $ from 'jquery';
@@ -53,6 +74,7 @@ import { VehiclePipe } from 'src/app/pipes/vehicle.pipe';
 import { DateInArrayPipe } from 'src/app/pipes/date-in-array.pipe';
 import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
+import { ModalComponent } from '@coreui/angular';
 
 @Component({
   selector: 'app-mapbox',
@@ -60,6 +82,9 @@ import { MetricPipe } from 'src/app/pipes/metric.pipe';
   styleUrls: ['./mapbox.component.scss'],
 })
 export class MapboxComponent implements OnInit, AfterViewInit {
+  @ViewChild('imagePopup') imagePopup!: ElementRef<HTMLImageElement>;
+  @ViewChild('rideInfoModal') rideInfoModal!: ModalComponent;
+
   constructor(
     private rideService: RideService,
     private userService: UserService,
@@ -88,6 +113,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     phone: new FormControl('', [Validators.required]),
     userIdPhotoURL: new FormControl('', [Validators.required]),
     vehicles: new FormArray([]),
+    email: new FormControl('', [Validators.required]),
   });
   user: UserDto | undefined;
   userIdPhotoURL: string | undefined;
@@ -125,12 +151,14 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         this.user = res;
         this.userIsAdmin = res.id == environment.adminUid;
         if (res.status == this.USER_STATUS_UNKNOWN) {
+          this.formUserInfo.patchValue({ id: res.id, email: res.email });
           this.toggleConfirmModal('newUser');
         } else {
           this.formUserInfo.patchValue({
             id: res.id,
             fullName: res.fullName,
             phone: res.phone,
+            email: res.email,
             userIdPhotoURL: res.userIdPhotoURL,
           });
           // res.vehicles.forEach((vehicle) => {});
@@ -182,9 +210,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   ctrlMidRight!: HTMLDivElement;
 
   buttonAdminPage!: HTMLButtonElement;
-  buttonToggleSearch!: HTMLButtonElement;
   divSearch!: HTMLDivElement;
-  buttonToggleProfile!: HTMLButtonElement;
   divButtonApplyWrapper!: HTMLDivElement;
   buttonApplyPoint!: HTMLButtonElement;
   inputDistance!: HTMLInputElement;
@@ -200,8 +226,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   buttonShowMyRides!: HTMLButtonElement;
   // end form share
-
-  rideInfoModalVisible: boolean = false;
 
   formSaveRide: FormGroup = new FormGroup({
     id: new FormControl(null),
@@ -320,7 +344,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       }
     );
   }
-
   private loadDataTable(): void {
     $(() => {
       this.dataTable = $('#table_id').DataTable({
@@ -386,10 +409,9 @@ export class MapboxComponent implements OnInit, AfterViewInit {
           },
           { data: 'criterions', searchable: true, orderable: false },
         ],
-      });
-
-      $('#table_id tbody').on('click', 'tr', (target: any) => {
-        this.rideInfoModalVisible = !this.rideInfoModalVisible;
+        drawCallback: (settings: any) => {
+          this.changeLinesColor();
+        },
       });
 
       $('canvas.mapboxgl-canvas').addClass('w-100 h-100');
@@ -439,7 +461,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       next: (res) => {
         res.forEach((ride) => {
           this.addDataSources(ride.id, ride.path);
-          this.addRideLayer(ride.id);
+          this.addRideLayer(ride.id, ride.photoURL);
         });
       },
     });
@@ -460,18 +482,24 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private addRideLayer(id: string): void {
+  popup: Popup = new Popup({
+    closeButton: true,
+  });
+  private addRideLayer(id: string, photoURL: string): void {
+    this.mapRef.addLayer(getPathCasingLayer(id));
     this.mapRef.addLayer(getPathLayer(id));
     this.mapRef.addLayer(getStartPointLayer(id));
     this.mapRef.addLayer(getStartSymbolLayer(id));
     this.mapRef.addLayer(getEndPointLayer(id));
     this.mapRef.addLayer(getEndSymbolLayer(id));
+    addPopupToLayer(id, this, photoURL);
   }
 
   private loadTopLeft(): void {
     this.mapRef.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
     $(() => {
       $('div.mapboxgl-ctrl-top-left')
+        .append($('div#filter-vehicle'))
         .append($('div#search-user'))
         .addClass('d-flex');
 
@@ -529,10 +557,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private onRouteSet(path: Path): void {
-    this.saveRoute = path.route.at(0);
-  }
-
   toggleFormSaveRide(display?: boolean): void {
     $(() => {
       $('#form-ride-share').toggleClass('d-none');
@@ -553,7 +577,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     userIdImage: null,
     vehicleImages: [],
   };
-  userIdPhotoUrl: string = '';
   vehiclePhoto: ITempVehilceImage[] = [];
   private fileReader: FileReader = new FileReader();
   onSelectFile(event: Event, type: string, index?: number): void {
@@ -565,7 +588,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         const _url: string = e.target?.result as string;
         switch (type) {
           case 'userIdImage': {
-            this.userIdPhotoUrl = _url;
+            this.userIdPhotoURL = _url;
             this._tmpTarget.userIdImage = target;
             break;
           }
@@ -593,7 +616,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     if (text) {
       this.userService.findUsersByText(text).subscribe({
         next: (res) => {
-          console.log('searching');
           this.findUsesByTextResult = res;
         },
       });
@@ -606,7 +628,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.searchUserModalVisible = !this.searchUserModalVisible;
   }
 
-  myRide: FindRidesResponse[] = [];
+  myRide: FindRideDetailResponse[] = [];
   myRidesModalVisible: boolean = false;
   toggleMyRidesModal(): void {
     this.findRidesByUserId(this.user!.id);
@@ -654,7 +676,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     return '';
   }
 
-  confirm: IConfirm = {
+  confirm: Confirm = {
     title: '',
     dismiss: '',
     accept: '',
@@ -666,7 +688,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       case 'newUser': {
         this.confirm = {
           title:
-            'Bạn là người dùng mới, hãy cập nhật thông tin để tiếp tục sử dụng dịch vụ',
+            'Bạn là người dùng mới, hãy cập nhật thông tin để tiếp tục sử dụng.',
           dismiss: 'Đăng xuất',
           accept: 'Cập nhật',
           action: action,
@@ -695,7 +717,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       }
       case 'saveRide': {
         this.confirm = {
-          title: 'Lưu thông tin chuyến đi',
+          title: 'Lưu thông tin hành trình',
           dismiss: 'Hủy',
           accept: 'Lưu',
           action: action,
@@ -738,6 +760,61 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       }
     }
     this.confirmModalVisible = !this.confirmModalVisible;
+  }
+
+  rideDetailInfo!: FindRideDetailResponse;
+  rideInfoModalVisible: boolean = false;
+  toggleRideInfoModal(id?: string): void {
+    if (id) {
+      this.rideService.findRideDetailById(id).subscribe({
+        next: (res) => {
+          this.rideDetailInfo = res;
+        },
+      });
+    }
+    this.rideInfoModal.visible = !this.rideInfoModal.visible;
+  }
+
+  // helper
+  private oldLineIds: string[] = [];
+  private changeLinesColor(): void {
+    const var1 = ($('#table_id').dataTable().api() as any)
+      .rows({ page: 'current' })
+      .data();
+
+    const var2 = var1.length;
+    let var3: string[] = [];
+    for (let i = 0; i < var2; i++) {
+      let id = (var1[i] as FindRidesResponse).id;
+      var3.push(id);
+      this.mapRef.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
+      this.mapRef.setPaintProperty(
+        `${id}-path-casing`,
+        'line-color',
+        COLOR['pink-dark']
+      );
+      this.oldLineIds = this.oldLineIds.filter((i) => i != id);
+    }
+
+    this.oldLineIds.forEach((i) => {
+      this.mapRef.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
+      this.mapRef.setPaintProperty(
+        `${i}-path-casing`,
+        'line-color',
+        COLOR['blue-dark']
+      );
+    });
+    this.oldLineIds = var3;
+  }
+
+  //listener
+  private onRouteSet(path: Path): void {
+    this.saveRoute = path.route.at(0);
+  }
+
+  filterVehicle: string = 'all';
+  onSelectFilterVehicle(event: string): void {
+    console.log(event);
   }
 
   onAcceptConfirm(): void {

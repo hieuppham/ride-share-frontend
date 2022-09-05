@@ -42,7 +42,7 @@
               </td>
               <td class="text-center">
                 <button
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width btn-action"
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width btn"
                   (click)="toggleRideInfoModal(ride.id)"
                 >
                   Chi tiết
@@ -105,7 +105,7 @@
           </p>
           <p>
             <span class="hl hl-lightgrey">{{
-              rideDetailInfo.vehicle.type | vehicle
+              rideDetailInfo.vehicle.type | vehicle | uppercase
             }}</span>
             <span class="hl hl-lightgrey">{{
               rideDetailInfo.vehicle.name
@@ -142,7 +142,7 @@
           type="button"
           (click)="toggleRideInfoModal()"
         >
-          {{ confirm.dismiss }}
+          Hủy
         </button>
         <button
           class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
@@ -153,7 +153,8 @@
               'updateRideStatus',
               rideDetailInfo.id,
               rideDetailInfo.status
-            )
+            );
+            toggleRideInfoModal()
           "
         >
           {{ rideDetailInfo.status | updateStatus }}
@@ -179,7 +180,20 @@
       aria-label="Close"
     ></button>
   </c-modal-header>
-  <!-- div thong tin chuyen di -->
+  <c-modal-body>
+    <div class="d-flex justify-content-center">
+      <label class="px-1" for="send-email"
+        >Gửi email thông báo tới người dùng</label
+      >
+      <input
+        id="send-email"
+        class="px-1"
+        type="checkbox"
+        [checked]="sendEmail"
+        (change)="toggleSendEmail()"
+      />
+    </div>
+  </c-modal-body>
   <c-modal-footer>
     <div class="d-flex flex-row justify-content-between w-100">
       <button

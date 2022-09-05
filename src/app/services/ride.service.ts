@@ -8,7 +8,7 @@ import {
   RideDto,
   SaveRideRequest,
   FindByIdRequest,
-  FindRideDetailReponse,
+  FindRideDetailResponse,
 } from '../interface/ride';
 import { UpdateStatusRequest } from '../interface/user';
 @Injectable({
@@ -34,9 +34,9 @@ export class RideService {
     return this.http.post<RideDto>(`${this.API_URL_RIDE}/find-by-id`, request);
   }
 
-  findRidesByUserId(id: string): Observable<FindRidesResponse[]> {
+  findRidesByUserId(id: string): Observable<FindRideDetailResponse[]> {
     const request: FindByIdRequest = { id: id };
-    return this.http.post<FindRidesResponse[]>(
+    return this.http.post<FindRideDetailResponse[]>(
       `${this.API_URL_RIDE}/find-by-user-id`,
       request
     );
@@ -49,9 +49,9 @@ export class RideService {
     );
   }
 
-  findRideDetailById(id: string): Observable<FindRideDetailReponse> {
+  findRideDetailById(id: string): Observable<FindRideDetailResponse> {
     const request: FindByIdRequest = { id: id };
-    return this.http.post<FindRideDetailReponse>(
+    return this.http.post<FindRideDetailResponse>(
       `${this.API_URL_RIDE}/find-detail-by-id`,
       request
     );

@@ -1,29 +1,39 @@
 import { Component, OnInit } from '@angular/core';
 import { AdminService } from '../admin.service';
-import { IConfirm } from 'src/app/interface/util';
+import { Confirm } from 'src/app/interface/util';
 import {
   FindUsersResponse,
   FindUsersAdminResponse,
+  UserDto,
+  UpdateStatusRequest,
 } from 'src/app/interface/user';
+import { UserService } from 'src/app/services/user.service';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
 
 @Component({
   templateUrl: 'user.component.html',
   styleUrls: ['../admin.component.scss'],
 })
 export class UserComponent implements OnInit {
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private userService: UserService,
+    private updateStatusPipe: UpdateStatusPipe
+  ) {}
 
   users: FindUsersAdminResponse[] = [];
 
+  userDetailInfo: UserDto | undefined;
   userInfoModalVisible: boolean = false;
-  toggleUserInfoModal(): void {
+  toggleUserInfoModal(id?: string): void {
+    if (id) {
+      this.userService.findUserById(id).subscribe({
+        next: (res) => {
+          this.userDetailInfo = res;
+        },
+      });
+    }
     this.userInfoModalVisible = !this.userInfoModalVisible;
-  }
-
-  chosenUser: FindUsersResponse | undefined;
-  showUserInfo(user: FindUsersResponse) {
-    this.chosenUser = user;
-    this.toggleUserInfoModal();
   }
 
   ngOnInit(): void {
@@ -40,23 +50,26 @@ export class UserComponent implements OnInit {
     });
   }
 
-  private updateStatus(id: string, event: any): void {
-    // this.adminService
-    //   .updateUserStatus({
-    //     id: id,
-    //     status: event.target.checked
-    //       ? EntityStatus.ACTIVE
-    //       : EntityStatus.INACTIVE,
-    //   } as IRequestUpdateStatusDto)
-    //   .subscribe({
-    //     next: (res) => {
-    //       this.getAllUsers();
-    //     },
-    //     error: (err) => console.error(err),
-    //   });
+  private updateRideStatus(): void {
+    const body: UpdateStatusRequest = {
+      id: this.confirm.target,
+      status: this.updateStatusPipe.transform(
+        this.userDetailInfo!.status,
+        'statusValue'
+      ),
+      sendEmail: this.sendEmail,
+    };
+    this.userService.updateUserStatus(body).subscribe({
+      next: (res) => {
+        console.log(res);
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
   }
 
-  confirm: IConfirm = {
+  confirm: Confirm = {
     title: '',
     dismiss: '',
     accept: '',
@@ -87,10 +100,15 @@ export class UserComponent implements OnInit {
     this.confirmModalVisible = !this.confirmModalVisible;
   }
 
+  sendEmail: boolean = true;
+  toggleSendEmail(): void {
+    this.sendEmail = !this.sendEmail;
+  }
+
   onAcceptConfirm(): void {
     switch (this.confirm.action) {
       case 'updateUserStatus': {
-        this.updateStatus(this.confirm.target!, this.confirm.data!);
+        this.updateRideStatus();
         break;
       }
       default: {

@@ -22,7 +22,7 @@ export interface FindRidesAdminResponse {
   distance: number;
   status: string;
 }
-export interface FindRideDetailReponse {
+export interface FindRideDetailResponse {
   id: string;
   startTime: Date;
   endTime: Date;

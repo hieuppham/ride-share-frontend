@@ -7,9 +7,20 @@ import {
   GeoJsonProperties,
   Geometry,
 } from 'geojson';
-import * as turf from '@turf/turf';
-
-import { CircleLayer, LineLayer, SymbolLayer } from 'mapbox-gl';
+import {
+  CircleLayer,
+  EventData,
+  LineLayer,
+  Map,
+  MapLayerMouseEvent,
+  Popup,
+  SymbolLayer,
+} from 'mapbox-gl';
+import { COLOR } from './geojson.constant';
+import { FindRidesResponse } from 'src/app/interface/ride';
+import 'datatables.net';
+import $ from 'jquery';
+import { MapboxComponent } from '../mapbox.component';
 
 function coordinatesGeocoder(query: string): any {
   const matches = query.match(
@@ -153,16 +164,32 @@ export function getPathLayer(id: string): LineLayer {
       'line-color': {
         property: 'congestion',
         type: 'categorical',
-        default: '#4882c5',
+        default: COLOR['blue'],
         stops: [
-          ['unknown', '#4882c5'],
-          ['low', '#4882c5'],
+          ['unknown', COLOR['blue']],
+          ['low', COLOR['blue']],
           ['moderate', '#f09a46'],
           ['heavy', '#e34341'],
           ['severe', '#8b2342'],
         ],
       },
       'line-width': 7,
+    },
+  } as LineLayer;
+}
+
+export function getPathCasingLayer(id: string) {
+  return {
+    id: `${id}-path-casing`,
+    type: 'line',
+    source: `${id}-path`,
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': COLOR['blue-dark'],
+      'line-width': 12,
     },
   } as LineLayer;
 }
@@ -221,6 +248,32 @@ export function getEndPointLayer(id: string): CircleLayer {
       'circle-color': '#8a8bc9',
     },
   } as CircleLayer;
+}
+
+export function addPopupToLayer(
+  id: string,
+  mapboxComponent: MapboxComponent,
+  photoURL: string
+): void {
+  mapboxComponent.mapRef.on(
+    'mouseenter',
+    `${id}-path`,
+    (e: MapLayerMouseEvent & EventData) => {
+      mapboxComponent.mapRef.getCanvas().style.cursor = 'pointer';
+      mapboxComponent.imagePopup.nativeElement.src = photoURL;
+      mapboxComponent.imagePopup.nativeElement.className = 'block';
+      mapboxComponent.imagePopup.nativeElement.addEventListener(
+        'click',
+        (e: MouseEvent) => {
+          mapboxComponent.toggleRideInfoModal(id);
+        }
+      );
+      mapboxComponent.popup
+        .setLngLat(e.lngLat)
+        .setDOMContent(mapboxComponent.imagePopup.nativeElement)
+        .addTo(mapboxComponent.mapRef);
+    }
+  );
 }
 
 export {

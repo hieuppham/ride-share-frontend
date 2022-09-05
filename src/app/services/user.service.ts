@@ -2,14 +2,16 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import {
-  FindUserByIdRequest,
+  FindShortUserInfoResponse,
   FindUserByUidRequest,
   FindUserRequest,
   FindUsersResponse,
   SaveUserRequest,
+  UpdateStatusRequest,
   UserDto,
 } from '../interface/user';
 import { Observable } from 'rxjs';
+import { FindByIdRequest } from '../interface/ride';
 @Injectable({
   providedIn: 'root',
 })
@@ -27,6 +29,10 @@ export class UserService {
     return this.http.post<UserDto>(`${this.API_USER_URL}/save`, body);
   }
 
+  updateUserStatus(body: UpdateStatusRequest): Observable<boolean> {
+    return this.http.post<boolean>(`${this.API_USER_URL}/update-status`, body);
+  }
+
   findUserByUid(uid: string): Observable<UserDto> {
     const body: FindUserByUidRequest = { uid: uid };
     return this.http.post<UserDto>(`${this.API_USER_URL}/find-by-uid`, body);
@@ -41,7 +47,15 @@ export class UserService {
   }
 
   findUserById(id: string): Observable<UserDto> {
-    const body: FindUserByIdRequest = { id: id };
+    const body: FindByIdRequest = { id: id };
     return this.http.post<UserDto>(`${this.API_USER_URL}/find-by-id`, body);
+  }
+
+  findShortUserInfo(id: string): Observable<FindShortUserInfoResponse> {
+    const body: FindByIdRequest = { id: id };
+    return this.http.post<FindShortUserInfoResponse>(
+      `${this.API_USER_URL}/find-short-info-by-id`,
+      body
+    );
   }
 }
