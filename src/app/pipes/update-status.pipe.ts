@@ -1,4 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { ENTITY_STATUS } from '../interface/entity-status';
 
 @Pipe({
   name: 'updateStatus',
@@ -17,11 +18,15 @@ export class UpdateStatusPipe implements PipeTransform {
           break;
         }
         case 'UNKNOWN': {
-          result = 'ACTIVE';
+          result = 'UNKNOWN';
           break;
         }
         case 'EXPIRED': {
           result = 'INACTIVE';
+          break;
+        }
+        case ENTITY_STATUS['PENDING']: {
+          result = 'ACTIVE';
           break;
         }
         default: {
@@ -40,6 +45,10 @@ export class UpdateStatusPipe implements PipeTransform {
           break;
         }
         case 'UNKNOWN': {
+          result = 'Không phê duyệt';
+          break;
+        }
+        case ENTITY_STATUS['PENDING']: {
           result = 'Phê duyệt';
           break;
         }

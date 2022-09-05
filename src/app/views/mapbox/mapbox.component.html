@@ -620,7 +620,7 @@
                     />
                     <!-- image -->
                     <input
-                      *ngIf="vehiclePhoto[i].image"
+                      *ngIf="vehiclePhoto[i]"
                       [src]="vehiclePhoto[i].image"
                       height="240px"
                       width="240px"
@@ -647,7 +647,7 @@
 
                     <!-- license plate number image -->
                     <input
-                      *ngIf="vehiclePhoto[i].lpnImage"
+                      *ngIf="vehiclePhoto[i]"
                       [src]="vehiclePhoto[i].lpnImage"
                       height="240px"
                       width="240px"
@@ -687,7 +687,7 @@
         <button
           class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
           cButton
-          (click)="toggleConfirmModal('saveUserInfo')"
+          (click)="toggleConfirmModal('updateUser')"
         >
           Cập nhật thông tin
         </button>

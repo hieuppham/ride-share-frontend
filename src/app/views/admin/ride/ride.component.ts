@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { AdminService } from '../admin.service';
-import { Confirm } from 'src/app/interface/util';
+import { Confirm } from '../../../interface/util';
 import {
   FindRideDetailResponse,
   FindRidesAdminResponse,
 } from 'src/app/interface/ride';
-import { RideService } from 'src/app/services/ride.service';
+import { RideService } from '../../../services/ride.service';
 import { UpdateStatusRequest } from 'src/app/interface/user';
 import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
 @Component({

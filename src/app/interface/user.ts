@@ -29,7 +29,7 @@ export interface UpdateUserRequest {
 }
 
 export interface VehicleDto {
-  id: string;
+  id: number;
   type: string;
   name: string;
   lpn: string;
@@ -77,10 +77,10 @@ export interface FindUsersAdminResponse {
 
 export interface ITempImage {
   userIdImage: string;
-  vehicleImages: ITempVehilceImage[];
+  vehicleImages: TempVehicleImage[];
 }
 
-export interface ITempVehilceImage {
+export interface TempVehicleImage {
   id: number;
   image: string;
   lpnImage: string;

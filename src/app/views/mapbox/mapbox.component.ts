@@ -3,11 +3,8 @@ import {
   Component,
   ElementRef,
   OnInit,
-  QueryList,
   ViewChild,
-  ViewChildren,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -16,8 +13,6 @@ import {
   MapboxEvent,
   Marker,
   LngLatLike,
-  MapLayerMouseEvent,
-  LineLayer,
   Popup,
 } from 'mapbox-gl';
 import * as MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
@@ -33,10 +28,11 @@ import {
 } from 'geojson';
 import {
   ITempImage,
-  ITempVehilceImage,
+  TempVehicleImage,
   ITempTarget,
   UserDto,
   FindUsersResponse,
+  UpdateUserRequest,
 } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
 import {
@@ -75,6 +71,8 @@ import { DateInArrayPipe } from 'src/app/pipes/date-in-array.pipe';
 import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { ModalComponent } from '@coreui/angular';
+import { ENTITY_STATUS } from 'src/app/interface/entity-status';
+import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
 
 @Component({
   selector: 'app-mapbox',
@@ -90,13 +88,13 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     private userService: UserService,
     private router: Router,
     private authService: AuthService,
+    private storageService: StorageService,
     private vehiclePipe: VehiclePipe,
     private dateInArrayPipe: DateInArrayPipe,
+    private dateInMilisec: DateInMilisecPipe,
     private avatarPipe: AvatarPipe,
     private metricPipe: MetricPipe
   ) {}
-
-  private USER_STATUS_UNKNOWN: string = 'UNKNOWN';
 
   ngOnInit(): void {
     this.loadUser();
@@ -117,6 +115,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   });
   user: UserDto | undefined;
   userIdPhotoURL: string | undefined;
+  vehiclePhoto: TempVehicleImage[] = [];
 
   public get vehicles(): FormArray {
     return this.formUserInfo.get('vehicles') as FormArray;
@@ -150,25 +149,74 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       next: (res: UserDto) => {
         this.user = res;
         this.userIsAdmin = res.email == environment.adminEmail;
-        if (res.status == this.USER_STATUS_UNKNOWN) {
-          this.formUserInfo.patchValue({ id: res.id, email: res.email });
-          this.toggleConfirmModal('newUser');
-        } else {
-          this.formUserInfo.patchValue({
-            id: res.id,
-            fullName: res.fullName,
-            phone: res.phone,
-            email: res.email,
-            userIdPhotoURL: res.userIdPhotoURL,
-          });
-          // res.vehicles.forEach((vehicle) => {});
-          this.userIdPhotoURL = res.userIdPhotoURL;
-
-          this.formSaveRide.patchValue({ uid: res.uid });
+        switch (res.status) {
+          case ENTITY_STATUS['UNKNOWN']: {
+            this.formUserInfo.patchValue({ id: res.id, email: res.email });
+            this.toggleConfirmModal('newUser');
+            break;
+          }
+          case ENTITY_STATUS['PENDING']: {
+            console.log(res.status);
+            break;
+          }
+          case ENTITY_STATUS['INACTIVE']: {
+            console.log(res.status);
+            break;
+          }
+          case ENTITY_STATUS['ACTIVE']: {
+            break;
+          }
+          default: {
+            console.log(res.status);
+            break;
+          }
         }
+
+        this.formUserInfo.patchValue({
+          id: res.id,
+          fullName: res.fullName,
+          phone: res.phone,
+          gender: res.gender,
+          dob: this.dateInMilisec.transform(res.dob, 'YYYY-MM-DD'),
+          email: res.email,
+          userIdPhotoURL: res.userIdPhotoURL,
+        });
+        // res.vehicles.forEach((vehicle) => {
+        //   this.vehicles.push({
+        //     id: vehicle.id,
+        //     type: vehicle.type,
+        //     name: vehicle.name,
+        //     lpn: vehicle.lpn,
+        //     lpnImage: vehicle.lpnImage,
+        //     image: vehicle.image,
+        //   });
+        //   this.vehiclePhoto.push({
+        //     id: vehicle.id,
+        //     lpnImage: vehicle.lpn,
+        //     image: vehicle.image,
+        //   });
+        // });
+        this.userIdPhotoURL = res.userIdPhotoURL;
+        this.formSaveRide.patchValue({ uid: res.uid });
       },
     });
   }
+
+  // private setFormUserInfoValue(user: UserDto, formUserInfo: FormGroup): void {
+  //   formUserInfo.patchValue({
+  //     id: user.id,
+  //     fullName: user.fullName,
+  //     phone: user.phone,
+  //     email: user.email,
+  //     userIdPhotoURL: user.userIdPhotoURL,
+  //     dob: user.dob,
+  //     gender: user.gender,
+  //   });
+
+  //   user.vehicles.forEach((v) => {
+  //     this.vehicles.push({});
+  //   });
+  // }
 
   private dataTable: any = null;
 
@@ -239,54 +287,59 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   });
 
   async onSubmitFormUserInfo(): Promise<void> {
-    // try {
-    //   if (this._tmpTarget.userIdImage) {
-    //     const _userIdPhotoUrl: string = await this.storageService.upload(
-    //       this._tmpTarget.userIdImage?.files?.item(0)!,
-    //       this.user.uid,
-    //       'user'
-    //     );
-    //     this.formUserInfo.patchValue({
-    //       userIdPhotoUrl: _userIdPhotoUrl,
-    //     });
-    //   }
-    //   const _vLength: number = this.user.vehicles?.length!;
-    //   for (let [i, v] of this._tmpTarget.vehicleImages.entries()) {
-    //     const vehicleImageUrl: string = await this.storageService.upload(
-    //       v.vehicleImage?.files?.item(0)!,
-    //       this.user.uid,
-    //       'vehicle',
-    //       _vLength + i
-    //     );
-    //     const lpnImageUrl: string = await this.storageService.upload(
-    //       v.lpnImage?.files?.item(0)!,
-    //       this.user.uid,
-    //       'lpn',
-    //       _vLength + i
-    //     );
-    //     (
-    //       (this.formUserInfo.controls['vehicles'] as FormArray).controls[
-    //         _vLength + i
-    //       ] as FormGroup
-    //     ).patchValue({
-    //       image: vehicleImageUrl,
-    //       lpnImage: lpnImageUrl,
-    //     });
-    //   }
-    //   // this.userService.saveUser(this.formUserInfo.value as User).subscribe({
-    //   //   next: (res) => {
-    //   //     this.user = res;
-    //   //   },
-    //   //   error: (err) => console.error(err),
-    //   // });
-    // } catch (error: any) {
-    //   console.error(error);
-    //   let err: IError = {
-    //     code: 9999,
-    //     message: 'Đã có lỗi xảy ra :(',
-    //   };
-    //   this.showErrorModal(err);
-    // }
+    try {
+      if (this._tmpTarget.userIdImage) {
+        const _userIdPhotoURL: string = await this.storageService.upload(
+          this._tmpTarget.userIdImage!.files!.item(0)!,
+          this.user!.uid,
+          'user'
+        );
+        this.formUserInfo.patchValue({
+          userIdPhotoURL: _userIdPhotoURL,
+        });
+      }
+      const _vLength: number = this.user!.vehicles.length;
+      for (let [i, v] of this._tmpTarget.vehicleImages.entries()) {
+        const vehicleImageURL: string = await this.storageService.upload(
+          v.vehicleImage?.files?.item(0)!,
+          this.user!.uid,
+          'vehicle',
+          _vLength + i
+        );
+        const lpnImageUrl: string = await this.storageService.upload(
+          v.lpnImage?.files?.item(0)!,
+          this.user!.uid,
+          'lpn',
+          _vLength + i
+        );
+        (
+          (this.formUserInfo.controls['vehicles'] as FormArray).controls[
+            _vLength + i
+          ] as FormGroup
+        ).patchValue({
+          image: vehicleImageURL,
+          lpnImage: lpnImageUrl,
+        });
+      }
+
+      this.userService
+        .updateUser(this.formUserInfo.value as UpdateUserRequest)
+        .subscribe({
+          next: (res) => {
+            this.user = res;
+          },
+          error: (err) => console.error(err),
+        });
+    } catch (error: any) {
+      console.error(error);
+      let err: Error = {
+        code: '9999',
+        message: 'Đã có lỗi xảy ra :(',
+      };
+      console.log(err);
+
+      // this.showErrorModal(err);
+    }
   }
 
   private onSubmitFormSaveRide(): void {
@@ -577,7 +630,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     userIdImage: null,
     vehicleImages: [],
   };
-  vehiclePhoto: ITempVehilceImage[] = [];
   private fileReader: FileReader = new FileReader();
   onSelectFile(event: Event, type: string, index?: number): void {
     const target: HTMLInputElement = event.target as HTMLInputElement;
@@ -683,7 +735,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     action: '',
   };
   confirmModalVisible: boolean = false;
-  toggleConfirmModal(action: string): void {
+  toggleConfirmModal(action?: string): void {
     switch (action) {
       case 'newUser': {
         this.confirm = {
@@ -742,7 +794,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
         break;
       }
-      case 'saveUserInfo': {
+      case 'updateUser': {
         this.confirm = {
           title: 'Cập nhật thông tin tài khoản',
           dismiss: 'Hủy',
@@ -827,7 +879,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         this.signOutApp();
         break;
       }
-      case 'saveUserInfo': {
+      case 'updateUser': {
         this.onSubmitFormUserInfo();
         break;
       }
@@ -848,6 +900,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         break;
       }
     }
-    this.confirmModalVisible = !this.confirmModalVisible;
+    this.toggleConfirmModal();
   }
 }
