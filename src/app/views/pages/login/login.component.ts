@@ -8,6 +8,11 @@ import { AuthService } from '../../../services/firebase/auth/auth.service';
 export class LoginComponent {
   constructor(private authService: AuthService) {}
 
+  public errorModalVisible: boolean = false;
+  toggleErrorModal(): void {
+    this.errorModalVisible = !this.errorModalVisible;
+  }
+
   public signIn(): void {
     this.authService.signInApp();
   }

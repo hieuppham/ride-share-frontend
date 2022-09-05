@@ -7,44 +7,20 @@ import {
   GeoJsonProperties,
   Geometry,
 } from 'geojson';
-import * as turf from '@turf/turf';
-
-import { formatDate } from '@angular/common';
-import { EEntityStatus } from 'src/app/interface/entity-status';
-
-function getStartPoint(dataPoint: FeatureCollection): Point {
-  return dataPoint.features[0].geometry as Point;
-}
-
-function getEndPoint(dataPoint: FeatureCollection): Point {
-  return dataPoint.features[dataPoint.features.length - 2].geometry as Point;
-}
-
-function getPath(dataPoint: FeatureCollection): GeoJSON.Point {
-  return dataPoint.features[dataPoint.features.length - 1].geometry as Point;
-}
-
-function calDistance(dataPath: Feature): number {
-  return Math.round(turf.length(dataPath) * 100) / 100;
-}
-
-function getStringTimeNow(): string {
-  return new Date().toISOString().slice(0, 16);
-}
-
-function newPoint(e: any): GeoJSON.Feature<Point, GeoJsonProperties> {
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: [e.result.center[0], e.result.center[1]],
-    },
-    properties: {
-      id: String(new Date().getTime()),
-      title: e.result.place_name,
-    },
-  } as GeoJSON.Feature<Point, GeoJsonProperties>;
-}
+import {
+  CircleLayer,
+  EventData,
+  LineLayer,
+  Map,
+  MapLayerMouseEvent,
+  Popup,
+  SymbolLayer,
+} from 'mapbox-gl';
+import { COLOR } from './geojson.constant';
+import { FindRidesResponse } from 'src/app/interface/ride';
+import 'datatables.net';
+import $ from 'jquery';
+import { MapboxComponent } from '../mapbox.component';
 
 function coordinatesGeocoder(query: string): any {
   const matches = query.match(
@@ -113,6 +89,12 @@ function dateArrayToString(date: number[]): string {
   )}/${twoDigit(date[1])}/${date[0]}`;
 }
 
+function dateArrayToDateTimeLocal(date: number[]): string {
+  return `${date[0]}-${twoDigit(date[1])}-${twoDigit(date[2])}T${twoDigit(
+    date[3]
+  )}:${twoDigit(date[4])}`;
+}
+
 function enumToStatus(status: string): string {
   let _status: string;
   switch (status) {
@@ -140,16 +122,165 @@ function enumToStatus(status: string): string {
   return _status;
 }
 
+export function extractStartPoint(
+  path: Feature<LineString, GeoJsonProperties>
+): Feature<Point, GeoJsonProperties> {
+  const point: Feature<Point, GeoJsonProperties> = {
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: path.geometry.coordinates[0],
+    },
+    properties: null,
+  };
+  return point;
+}
+
+export function extractEndPoint(
+  path: Feature<LineString, GeoJsonProperties>
+): Feature<Point, GeoJsonProperties> {
+  const point: Feature<Point, GeoJsonProperties> = {
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates:
+        path.geometry.coordinates[path.geometry.coordinates.length - 1],
+    },
+    properties: null,
+  };
+  return point;
+}
+
+export function getPathLayer(id: string): LineLayer {
+  return {
+    id: `${id}-path`,
+    type: 'line',
+    source: `${id}-path`,
+    layout: {
+      'line-cap': 'butt',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': {
+        property: 'congestion',
+        type: 'categorical',
+        default: COLOR['blue'],
+        stops: [
+          ['unknown', COLOR['blue']],
+          ['low', COLOR['blue']],
+          ['moderate', '#f09a46'],
+          ['heavy', '#e34341'],
+          ['severe', '#8b2342'],
+        ],
+      },
+      'line-width': 7,
+    },
+  } as LineLayer;
+}
+
+export function getPathCasingLayer(id: string) {
+  return {
+    id: `${id}-path-casing`,
+    type: 'line',
+    source: `${id}-path`,
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': COLOR['blue-dark'],
+      'line-width': 12,
+    },
+  } as LineLayer;
+}
+
+export function getStartSymbolLayer(id: string): SymbolLayer {
+  return {
+    id: `${id}-start-point-label`,
+    type: 'symbol',
+    source: `${id}-start-point`,
+    layout: {
+      'text-field': 'Đ',
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': 12,
+    },
+    paint: {
+      'text-color': '#fff',
+    },
+  } as SymbolLayer;
+}
+
+export function getStartPointLayer(id: string): CircleLayer {
+  return {
+    id: `${id}-start-point-origin`,
+    type: 'circle',
+    source: `${id}-start-point`,
+    paint: {
+      'circle-radius': 18,
+      'circle-color': '#3bb2d0',
+    },
+  } as CircleLayer;
+}
+
+export function getEndSymbolLayer(id: string): SymbolLayer {
+  return {
+    id: `${id}-end-point-label`,
+    type: 'symbol',
+    source: `${id}-end-point`,
+    layout: {
+      'text-field': 'C',
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': 12,
+    },
+    paint: {
+      'text-color': '#fff',
+    },
+  } as SymbolLayer;
+}
+
+export function getEndPointLayer(id: string): CircleLayer {
+  return {
+    id: `${id}-end-point-origin`,
+    type: 'circle',
+    source: `${id}-end-point`,
+    paint: {
+      'circle-radius': 18,
+      'circle-color': '#8a8bc9',
+    },
+  } as CircleLayer;
+}
+
+export function addPopupToLayer(
+  id: string,
+  mapboxComponent: MapboxComponent,
+  photoURL: string
+): void {
+  mapboxComponent.mapRef.on(
+    'mouseenter',
+    `${id}-path`,
+    (e: MapLayerMouseEvent & EventData) => {
+      mapboxComponent.mapRef.getCanvas().style.cursor = 'pointer';
+      mapboxComponent.imagePopup.nativeElement.src = photoURL;
+      mapboxComponent.imagePopup.nativeElement.className = 'block';
+      mapboxComponent.imagePopup.nativeElement.addEventListener(
+        'click',
+        (e: MouseEvent) => {
+          mapboxComponent.toggleRideInfoModal(id);
+        }
+      );
+      mapboxComponent.popup
+        .setLngLat(e.lngLat)
+        .setDOMContent(mapboxComponent.imagePopup.nativeElement)
+        .addTo(mapboxComponent.mapRef);
+    }
+  );
+}
+
 export {
-  getStartPoint,
-  getEndPoint,
-  getPath,
-  calDistance,
-  getStringTimeNow,
-  newPoint,
   coordinatesGeocoder,
   pointToCoordinates,
   toFeature,
   dateArrayToString,
   enumToStatus,
+  dateArrayToDateTimeLocal,
 };

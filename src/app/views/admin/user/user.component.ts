@@ -1,50 +1,47 @@
 import { Component, OnInit } from '@angular/core';
-import { IUser } from '../../../interface/user';
 import { AdminService } from '../admin.service';
-import { EEntityStatus } from 'src/app/interface/entity-status';
-import { IRequestUpdateStatusDto } from 'src/app/interface/request-update-status-dto';
+import { Confirm } from 'src/app/interface/util';
+import {
+  FindUsersResponse,
+  FindUsersAdminResponse,
+  UserDto,
+  UpdateStatusRequest,
+} from 'src/app/interface/user';
+import { UserService } from 'src/app/services/user.service';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
+
 @Component({
   templateUrl: 'user.component.html',
   styleUrls: ['../admin.component.scss'],
 })
 export class UserComponent implements OnInit {
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private userService: UserService,
+    private updateStatusPipe: UpdateStatusPipe
+  ) {}
 
-  users: IUser[] = [];
+  users: FindUsersAdminResponse[] = [];
 
-  gender(gender: string): string {
-    return gender == 'male' ? 'Nam' : 'female' ? 'Nữ' : 'Cả nam và nữ';
-  }
-
-  status(status: string): string {
-    let result: string;
-    switch (status) {
-      case 'ACTIVE': {
-        result = 'Hoạt động';
-        break;
-      }
-      case 'INACTIVE': {
-        result = 'Không hoạt động';
-        break;
-      }
-      case 'UNKNOWN': {
-        result = 'Chưa phê duyệt';
-        break;
-      }
-      default: {
-        result = 'Chưa phê duyệt';
-        break;
-      }
+  userDetailInfo: UserDto | undefined;
+  userInfoModalVisible: boolean = false;
+  toggleUserInfoModal(id?: string): void {
+    if (id) {
+      this.userService.findUserById(id).subscribe({
+        next: (res) => {
+          this.userDetailInfo = res;
+        },
+      });
     }
-    return result;
+    this.userInfoModalVisible = !this.userInfoModalVisible;
   }
 
   ngOnInit(): void {
-    this.getAllUsers();
+    this.findAllUsers();
   }
 
-  getAllUsers(): void {
-    this.adminService.getAllUsers().subscribe({
+  private findAllUsers(): void {
+    this.adminService.findAllUsers().subscribe({
       next: (res) => {
         this.users = res;
       },
@@ -53,23 +50,72 @@ export class UserComponent implements OnInit {
     });
   }
 
-  isActive(status: EEntityStatus): boolean {
-    return status.toString() == 'ACTIVE';
+  private updateRideStatus(): void {
+    const body: UpdateStatusRequest = {
+      id: this.confirm.target,
+      status: this.updateStatusPipe.transform(
+        this.userDetailInfo!.status,
+        'statusValue'
+      ),
+      sendEmail: this.sendEmail,
+    };
+    this.userService.updateUserStatus(body).subscribe({
+      next: (res) => {
+        console.log(res);
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
   }
 
-  updateStatus(id: string, event: any): void {
-    this.adminService
-      .updateUserStatus({
-        id: id,
-        status: event.target.checked
-          ? EEntityStatus.ACTIVE
-          : EEntityStatus.INACTIVE,
-      } as IRequestUpdateStatusDto)
-      .subscribe({
-        next: (res) => {
-          this.getAllUsers();
-        },
-        error: (err) => console.error(err),
-      });
+  confirm: Confirm = {
+    title: '',
+    dismiss: '',
+    accept: '',
+    action: '',
+  };
+  confirmModalVisible: boolean = false;
+  toggleConfirmModal(
+    action: string,
+    target?: string | number | any,
+    data?: string | number | boolean | any
+  ): void {
+    switch (action) {
+      case 'updateUserStatus': {
+        this.confirm = {
+          title: 'Cập nhật trạng thái người dùng',
+          dismiss: 'Hủy',
+          accept: 'Cập nhật',
+          action: action,
+          target: target!,
+          data: data!,
+        };
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    this.confirmModalVisible = !this.confirmModalVisible;
+  }
+
+  sendEmail: boolean = true;
+  toggleSendEmail(): void {
+    this.sendEmail = !this.sendEmail;
+  }
+
+  onAcceptConfirm(): void {
+    switch (this.confirm.action) {
+      case 'updateUserStatus': {
+        this.updateRideStatus();
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    this.confirmModalVisible = !this.confirmModalVisible;
+    this.findAllUsers();
   }
 }

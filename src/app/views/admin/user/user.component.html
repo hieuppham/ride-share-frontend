@@ -3,16 +3,21 @@
     <c-card class="mb-4">
       <c-card-header>Người dùng</c-card-header>
       <c-card-body>
-        <table [hover]="true" [responsive]="true" [striped]="true" align="middle" cTable class="mb-0 border">
+        <table
+          [hover]="true"
+          [responsive]="true"
+          [striped]="true"
+          align="middle"
+          cTable
+          class="mb-0 border"
+        >
           <thead cTableColor="light">
             <tr>
-              <th class="text-center">
-              </th>
+              <th class="text-center"></th>
               <th>Người dùng</th>
               <th class="text-center">Giới tính</th>
               <th>Email</th>
               <th class="text-center">Số điện thoại</th>
-              <th>Phương tiện</th>
               <th class="text-center">Trạng thái</th>
               <th class="text-center"></th>
             </tr>
@@ -20,13 +25,13 @@
           <tbody>
             <tr *ngFor="let user of users; let i = index">
               <td class="text-center">
-                <c-avatar size="md" src="{{ user.photoUrl }}"></c-avatar>
+                <c-avatar size="md" src="{{ user.photoURL }}"></c-avatar>
               </td>
               <td>
-                <div>{{ user.fullName}}</div>
+                <div>{{ user.fullName }}</div>
               </td>
               <td class="text-center">
-                {{gender(user.gender!)}}
+                {{ user.gender | gender }}
               </td>
               <td>
                 <div class="clearfix">
@@ -38,19 +43,17 @@
                   {{ user.phone }}
                 </div>
               </td>
-              <td>
-                {{ user.vehicles }}
+              <td class="text-center">
+                {{ user.status | status }}
               </td>
               <td class="text-center">
-                {{status(user.status.toString())}}
+                <button
+                  (click)="toggleUserInfoModal(user.id)"
+                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action fit-width"
+                >
+                  Chi tiết
+                </button>
               </td>
-              <td class="text-center">
-                <input id="active-user" type="checkbox" [checked]="isActive(user.status)"
-                  (change)="updateStatus(user.id!, $event)" class="btn-action">
-                <button [cModalToggle]="userInfoModal.id"
-                  class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action">Sửa</button>
-              </td>
-
             </tr>
           </tbody>
         </table>
@@ -59,12 +62,172 @@
   </c-col>
 </c-row>
 
-<c-modal #userInfoModal alignment="center" id="user-info-modal" [visible]="false">
+<c-modal
+  #userInfoModal
+  alignment="center"
+  size="lg"
+  id="user-info-modal"
+  [visible]="userInfoModalVisible"
+  *ngIf="userDetailInfo"
+  scrollable
+>
   <c-modal-header>
-    <h5 cModalTitle>Thông tin chuyến đi</h5>
-    <button [cModalToggle]="userInfoModal.id" id="btn-close-modal"
-      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input fit-width" cButton>
-      Đóng
-    </button>
+    <h5 cModalTitle>Thông tin người dùng</h5>
+    <button
+      (click)="toggleUserInfoModal()"
+      id="btn-close-modal"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
   </c-modal-header>
   <c-modal-body>
+    <div id="user-info">
+      <c-avatar
+        id="user-avatar"
+        shape="rounded-1"
+        size="xl"
+        src="{{ userDetailInfo.photoURL }}"
+        class="avatar avatar-md rounded-1 text-primary"
+      >
+      </c-avatar>
+      <div class="d-flex flex-row w-100">
+        <div id="input-user-info">
+          <div id="user-id-image" class="d-flex flex-column align-items-center">
+            <img
+              *ngIf="userDetailInfo.userIdPhotoURL"
+              [src]="userDetailInfo.userIdPhotoURL"
+              height="240px"
+              width="240px"
+            />
+          </div>
+
+          <div id="text-user-info" class="align-items-start">
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.fullName
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.dob | dateInMilisec
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.gender | gender
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.phone
+            }}</span>
+            <span class="hl hl-lightgrey w-fit">{{
+              userDetailInfo.email
+            }}</span>
+          </div>
+        </div>
+      </div>
+      <div id="vehicle-info" class="w-100 h-100">
+        <ng-container *ngFor="let v of userDetailInfo.vehicles; let i = index">
+          <div class="d-flex my-3 justify-content-between">
+            <div class="d-flex flex-column align-items-center w-100">
+              <span class="hl hl-lightgrey w-fit">{{
+                v.type | vehicle | uppercase
+              }}</span>
+            </div>
+            <div class="d-flex flex-column w-100">
+              <span class="hl hl-lightgrey w-fit mb-2 mx-0">{{ v.name }}</span>
+              <img
+                *ngIf="v.image"
+                [src]="v.image"
+                height="240px"
+                width="240px"
+              />
+            </div>
+            <div class="d-flex flex-column w-100">
+              <span class="hl hl-lightgrey w-fit mb-2 mx-0">{{ v.lpn }}</span>
+              <img
+                *ngIf="v.lpnImage"
+                [src]="v.lpnImage"
+                height="240px"
+                width="240px"
+              />
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <div class="d-flex flex-row justify-content-between w-100">
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
+        cButton
+        type="button"
+      >
+        Hủy
+      </button>
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="
+          toggleConfirmModal(
+            'updateUserStatus',
+            userDetailInfo.id,
+            userDetailInfo.status
+          );
+          toggleUserInfoModal()
+        "
+      >
+        {{ userDetailInfo.status | updateStatus }}
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+
+<!-- modal confirm  -->
+<c-modal
+  #cofirmModal
+  alignment="center"
+  id="cofirmModal"
+  [visible]="confirmModalVisible"
+  scrollable
+>
+  <c-modal-header>
+    <h5 cModalTitle>{{ confirm.title }}<b> </b></h5>
+    <button
+      (click)="toggleConfirmModal('close')"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div class="d-flex justify-content-center">
+      <label class="px-1" for="send-email"
+        >Gửi email thông báo tới người dùng</label
+      >
+      <input
+        id="send-email"
+        class="px-1"
+        type="checkbox"
+        [checked]="sendEmail"
+        (change)="toggleSendEmail()"
+      />
+    </div>
+  </c-modal-body>
+  <c-modal-footer>
+    <div class="d-flex flex-row justify-content-between w-100">
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="toggleConfirmModal('close')"
+      >
+        {{ confirm.dismiss }}
+      </button>
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text fit-width"
+        cButton
+        type="button"
+        (click)="onAcceptConfirm()"
+      >
+        {{ confirm.accept }}
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+<!-- end modal confirm -->

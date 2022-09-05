@@ -6,6 +6,8 @@ import {
   ref,
   StorageReference,
   uploadBytes,
+  UploadResult,
+  getDownloadURL,
 } from 'firebase/storage';
 @Injectable({
   providedIn: 'root',
@@ -17,40 +19,49 @@ export class StorageService {
   constructor() {}
 
   /**
-   * @param target input target
+   * @param file upload file
    * @param uid  user uid
+   * @param type user, vehicle, lpn
+   * @param index id of the vehicle
    */
   async upload(
-    target: HTMLInputElement,
+    file: File,
     uid: string,
     type: string,
     index?: number
-  ): Promise<void> {
-    const file: File = target.files?.item(0)!;
-    let fileName: string = file.name;
-    const blob = await file?.arrayBuffer();
+  ): Promise<string> {
+    file = this.modifyFilename(file, type);
+    const blob: ArrayBuffer = await file?.arrayBuffer();
+    const storageRef = this.getRef(uid, type, file, index);
+    const uploadResult: UploadResult = await uploadBytes(storageRef, blob);
+    const url: string = await this.getFileUrl(uploadResult.ref.fullPath);
+    return url;
+  }
+
+  private modifyFilename(file: File, type: string): File {
+    const ext: string = file.name.substring(file.name.lastIndexOf('.'));
+    file = new File([file], `${type}${ext}`, { type: file.type });
+    return file;
+  }
+
+  private async getFileUrl(refPath: string): Promise<string> {
+    const url: string = await getDownloadURL(ref(this.storage, refPath));
+    return url;
+  }
+
+  private getRef(
+    uid: string,
+    type: string,
+    file: File,
+    index?: number
+  ): StorageReference {
     let refPath: string;
-    switch (type) {
-      case 'userIdImage': {
-        refPath = `${uid}/${fileName}`;
-        break;
-      }
-      case 'vehicleImage': {
-        refPath = `${uid}/${index!}/v/${fileName}`;
-        break;
-      }
-      case 'lpnImage': {
-        refPath = `${uid}/${index!}/lpn/${fileName}`;
-        break;
-      }
-      default: {
-        refPath = uid;
-        break;
-      }
+    if (type == 'vehicle' || type == 'lpn') {
+      refPath = `${uid}/${index!}/${file.name}`;
+    } else {
+      refPath = `${uid}/${file.name}`;
     }
-    const storageRef = ref(this.rootRef, refPath);
-    const snapshot = await uploadBytes(storageRef, blob);
-    console.log(snapshot);
+    return ref(this.rootRef, refPath);
   }
 }
 

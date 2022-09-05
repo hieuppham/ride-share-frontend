@@ -1,6 +1,6 @@
 import { MapboxComponent } from '../mapbox.component';
 
-import { Map, NavigationControl } from 'mapbox-gl';
+import { NavigationControl } from 'mapbox-gl';
 
 function initView(mapBoxComponent: MapboxComponent): void {
   mapBoxComponent.ctrlTopLeft = document.getElementsByClassName(

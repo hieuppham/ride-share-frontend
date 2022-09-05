@@ -1,79 +1,108 @@
 import { Component, OnInit } from '@angular/core';
-import { EEntityStatus } from 'src/app/interface/entity-status';
-import { IRideResponseDto } from 'src/app/interface/ride-reponse-dto';
 import { AdminService } from '../admin.service';
-import { IRequestUpdateStatusDto } from '../../../interface/request-update-status-dto';
+import { Confirm } from 'src/app/interface/util';
+import {
+  FindRideDetailResponse,
+  FindRidesAdminResponse,
+} from 'src/app/interface/ride';
+import { RideService } from 'src/app/services/ride.service';
+import { UpdateStatusRequest } from 'src/app/interface/user';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
 @Component({
-  templateUrl: 'ride.component.html',
+  templateUrl: './ride.component.html',
   styleUrls: ['../admin.component.scss'],
 })
 export class RideComponent implements OnInit {
-  rideResponseDto: IRideResponseDto[] = [];
+  constructor(
+    private adminService: AdminService,
+    private rideService: RideService,
+    private updateStatusPipe: UpdateStatusPipe
+  ) {}
 
-  constructor(private adminService: AdminService) {}
-
+  rides: FindRidesAdminResponse[] = [];
   ngOnInit(): void {
-    this.getAllRides();
-  }
-
-  getAllRides(): void {
-    this.adminService.getAllRides().subscribe({
+    this.adminService.findAllRides().subscribe({
       next: (res) => {
-        this.rideResponseDto = res;
+        this.rides = res;
       },
-      error: (err) => console.error(err),
-      complete: () => console.log('load rides done'),
     });
   }
 
-  status(status: string): string {
-    let result: string;
-    switch (status) {
-      case 'ACTIVE': {
-        result = 'Hoạt động';
-        break;
-      }
-      case 'EXPIRED': {
-        result = 'Đã kết thúc';
-        break;
-      }
-      case 'INACTIVE': {
-        result = 'Không hoạt động';
-        break;
-      }
-      case 'UNKNOWN': {
-        result = 'Chưa phê duyệt';
+  confirm: Confirm = {
+    title: '',
+    dismiss: '',
+    accept: '',
+    action: '',
+  };
+  confirmModalVisible: boolean = false;
+  toggleConfirmModal(
+    action: string,
+    target?: string | number | any,
+    data?: string | number | boolean | any
+  ): void {
+    switch (action) {
+      case 'updateRideStatus': {
+        this.confirm = {
+          title: 'Cập nhật trạng thái hành trình',
+          dismiss: 'Hủy',
+          accept: 'Cập nhật',
+          action: action,
+          target: target!,
+          data: this.updateStatusPipe.transform(data!, 'statusValue'),
+        };
         break;
       }
       default: {
-        result = 'Chưa phê duyệt';
         break;
       }
     }
-    return result;
+    this.confirmModalVisible = !this.confirmModalVisible;
   }
 
-  isActive(status: EEntityStatus): boolean {
-    return status.toString() === 'ACTIVE';
-  }
-
-  updateStatus(id: string, event: any) {
-    this.adminService
-      .updateRideStatus({
-        id: id,
-        status: event.target.checked
-          ? EEntityStatus.ACTIVE
-          : EEntityStatus.INACTIVE,
-      } as IRequestUpdateStatusDto)
-      .subscribe({
+  rideDetailInfo: FindRideDetailResponse | undefined;
+  rideInfoModalVisible: boolean = false;
+  toggleRideInfoModal(id?: string): void {
+    if (id) {
+      this.rideService.findRideDetailById(id).subscribe({
         next: (res) => {
-          this.getAllRides();
+          this.rideDetailInfo = res;
         },
-        error: (err) => console.error(err),
       });
+    }
+    this.rideInfoModalVisible = !this.rideInfoModalVisible;
   }
 
-  public vehicle(type: string): string {
-    return type === 'motobike' ? 'Xe máy' : 'Ô tô';
+  private updateRideStatus(): void {
+    const body: UpdateStatusRequest = {
+      id: this.confirm.target,
+      status: this.confirm.data,
+      sendEmail: this.sendEmail,
+    };
+    this.rideService.updateRideStatus(body).subscribe({
+      next: (res) => {
+        console.log(res);
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
+
+  sendEmail: boolean = true;
+  toggleSendEmail(): void {
+    this.sendEmail = !this.sendEmail;
+  }
+
+  onAcceptConfirm(): void {
+    switch (this.confirm.action) {
+      case 'updateRideStatus': {
+        this.updateRideStatus();
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    this.confirmModalVisible = !this.confirmModalVisible;
   }
 }

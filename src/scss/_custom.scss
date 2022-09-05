@@ -1,44 +1,76 @@
 .hl {
-    padding: 5px;
-    border-radius: 5px;
-    font-weight: 500;
-    margin-right: 5px;
-    margin-left: 5px;
-} 
+  padding: 5px;
+  border-radius: 5px;
+  font-weight: 500;
+  margin-right: 5px;
+  margin-left: 5px;
+}
 
 .text-center {
-    text-align: center;
+  text-align: center;
 }
 .hl-red {
-    background-color: #de0e23;
-    color: #eef8f3;
+  background-color: #de0e23;
+  color: #eef8f3;
 }
 
 .hl-green {
-    background-color: #058d2e;
-    color: #eef8f3;
+  background-color: #058d2e;
+  color: #eef8f3;
 }
 
 .hl-yellow {
-    background-color: #f1d948;
-    color: #323023;
+  background-color: #f1d948;
+  color: #323023;
 }
 
 .hl-deepblue {
-    background-color: #415cd3;
-    color: #ffffff
+  background-color: #415cd3;
+  color: #ffffff;
 }
 
 .hl-lightgrey {
-    background-color: #e9e9e4;
-    color: #4d4d4c;
+  background-color: #e9e9e4;
+  color: #4d4d4c;
 }
-body {
-    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, Helvetica, sans-serif
 
+.bg-green {
+  background-color: #00a845;
+}
+
+.bg-red {
+  background-color: #df001b;
+}
+
+.color-white {
+  color: #fff;
+}
+
+body {
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    Arial, Helvetica, sans-serif;
 }
 
 table#table_id {
-    font-size: 15px;
+  font-size: 15px;
 }
 
+.w-fit {
+  width: fit-content;
+  min-width: fit-content;
+}
+
+.btn {
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+textarea {
+  outline: none !important;
+}
+#form-ride-share > div:nth-child(2) > div {
+  height: 70px;
+}
+
+button:hover {
+}

@@ -7,8 +7,8 @@ const MAPBOX_OPTIONS: MapboxOptions = {
   accessToken: environment.mapbox.accessToken,
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v11',
-  center: [105.82006363617364, 21.00317467338734],
-  zoom: 10,
+  zoom: 0,
+  center: [106.95859399778641, 16.78288117290175],
 };
 
 const GEOCODER_OPT_END_POINT: any = {
@@ -37,11 +37,23 @@ const GEOCODER_OPT_SEARCH: any = {
   accessToken: environment.mapbox.accessToken,
   localGeocoder: coordinatesGeocoder,
   marker: {
-    color: 'blue',
+    color: '#048c2c',
   },
   zoom: 18,
-  placeholder: 'Khu vực',
+  placeholder: '       Khu vực',
   mapboxgl: mapboxgl,
+};
+
+interface Color {
+  [key: string]: string;
+}
+
+export const COLOR: Color = {
+  pink: '#e3adbe',
+  'pink-dark': '#b75676',
+  blue: '#4fd2f4',
+  'blue-dark': '#3a63b8',
+  red: '#f20007',
 };
 
 export {

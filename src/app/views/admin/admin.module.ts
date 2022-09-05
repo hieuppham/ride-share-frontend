@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, UpperCasePipe } from '@angular/common';
 import {
   AvatarModule,
   CardModule,
@@ -19,6 +19,10 @@ import { UserComponent } from './user/user.component';
 import { RideComponent } from './ride/ride.component';
 import { AdminComponent } from './admin.component';
 import { DefaultHeaderComponent } from './default-header/default-header.component';
+import { PipeModule } from 'src/app/pipes/pipe.module';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
+import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
+
 @NgModule({
   imports: [
     CardModule,
@@ -34,6 +38,7 @@ import { DefaultHeaderComponent } from './default-header/default-header.componen
     DropdownModule,
     ButtonModule,
     BreadcrumbModule,
+    PipeModule,
   ],
   declarations: [
     UserComponent,
@@ -42,5 +47,6 @@ import { DefaultHeaderComponent } from './default-header/default-header.componen
     DefaultHeaderComponent,
   ],
   bootstrap: [AdminComponent],
+  providers: [UpdateStatusPipe, DateInMilisecPipe, UpperCasePipe],
 })
 export class AdminModule {}

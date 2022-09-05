@@ -5,14 +5,13 @@ import {
   Auth,
   signInWithPopup,
   OAuthCredential,
-  User,
   signOut,
 } from 'firebase/auth';
 import { UserService } from 'src/app/services/user.service';
 import { app } from '../index';
 import { Router } from '@angular/router';
 
-import { IUser } from '../../../interface/user';
+import * as user from '../../../interface/user';
 @Injectable({
   providedIn: 'root',
 })
@@ -24,17 +23,21 @@ export class AuthService {
   public signInApp(): void {
     signInWithPopup(this.auth, this.provider)
       .then((result) => {
-        this.userService.upsertUser(this.toIUser(result.user)).subscribe({
-          next: (res) => {
-            localStorage.setItem('uid', res.uid);
-            this.router.navigate(['/map']);
-          },
-          error: (err) => console.error(err),
-        });
+        this.userService
+          .saveUser(result.user.uid, result.user.email!, result.user.photoURL!)
+          .subscribe({
+            next: (res: user.UserDto) => {
+              localStorage.setItem('id', res.id);
+              this.router.navigate(['/map']);
+            },
+            error: (err) => {
+              throw err;
+            },
+          });
       })
       .catch((error) => {
-        const credential: OAuthCredential | null =
-          GoogleAuthProvider.credentialFromError(error);
+        // const credential: OAuthCredential | null =
+        //   GoogleAuthProvider.credentialFromError(error);
       });
   }
 
@@ -47,14 +50,5 @@ export class AuthService {
       .catch((error) => {
         console.error(error);
       });
-  }
-
-  private toIUser(googleUser: User): IUser {
-    return {
-      uid: googleUser.uid,
-      photoUrl: googleUser.photoURL,
-      phone: googleUser.phoneNumber,
-      email: googleUser.email,
-    } as IUser;
   }
 }

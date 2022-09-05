@@ -41,8 +41,10 @@
             ],
             "allowedCommonJsDependencies": [
               "chart.js",
-              "@coreui/chartjs/dist/js/coreui-chartjs.js"
+              "@coreui/chartjs/dist/js/coreui-chartjs.js",
+              "@mapbox/mapbox-gl-directions"
             ]
+            
           },
           "configurations": {
             "production": {

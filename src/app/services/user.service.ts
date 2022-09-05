@@ -1,8 +1,17 @@
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { IUser } from '../interface/user';
+import {
+  FindShortUserInfoResponse,
+  FindUserByUidRequest,
+  FindUserRequest,
+  FindUsersResponse,
+  SaveUserRequest,
+  UpdateStatusRequest,
+  UserDto,
+} from '../interface/user';
 import { Observable } from 'rxjs';
+import { FindByIdRequest } from '../interface/ride';
 @Injectable({
   providedIn: 'root',
 })
@@ -11,15 +20,42 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  upsertUser(user: IUser): Observable<IUser> {
-    return this.http.post<IUser>(this.API_USER_URL, user);
+  saveUser(uid: string, email: string, photoURL: string): Observable<UserDto> {
+    const body: SaveUserRequest = {
+      uid: uid,
+      email: email,
+      photoURL: photoURL,
+    };
+    return this.http.post<UserDto>(`${this.API_USER_URL}/save`, body);
   }
 
-  getUserByUID(uid: string): Observable<IUser> {
-    return this.http.get<IUser>(`${this.API_USER_URL}/${uid}`);
+  updateUserStatus(body: UpdateStatusRequest): Observable<boolean> {
+    return this.http.post<boolean>(`${this.API_USER_URL}/update-status`, body);
   }
 
-  searchUser(what: string): Observable<IUser[]> {
-    return this.http.get<IUser[]>(`${this.API_USER_URL}/search?what=${what}`);
+  findUserByUid(uid: string): Observable<UserDto> {
+    const body: FindUserByUidRequest = { uid: uid };
+    return this.http.post<UserDto>(`${this.API_USER_URL}/find-by-uid`, body);
+  }
+
+  findUsersByText(text: string): Observable<FindUsersResponse[]> {
+    const body: FindUserRequest = { text: text };
+    return this.http.post<FindUsersResponse[]>(
+      `${this.API_USER_URL}/search`,
+      body
+    );
+  }
+
+  findUserById(id: string): Observable<UserDto> {
+    const body: FindByIdRequest = { id: id };
+    return this.http.post<UserDto>(`${this.API_USER_URL}/find-by-id`, body);
+  }
+
+  findShortUserInfo(id: string): Observable<FindShortUserInfoResponse> {
+    const body: FindByIdRequest = { id: id };
+    return this.http.post<FindShortUserInfoResponse>(
+      `${this.API_USER_URL}/find-short-info-by-id`,
+      body
+    );
   }
 }
