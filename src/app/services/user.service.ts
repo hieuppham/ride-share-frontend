@@ -8,6 +8,7 @@ import {
   FindUsersResponse,
   SaveUserRequest,
   UpdateStatusRequest,
+  UpdateUserRequest,
   UserDto,
 } from '../interface/user';
 import { Observable } from 'rxjs';
@@ -27,6 +28,10 @@ export class UserService {
       photoURL: photoURL,
     };
     return this.http.post<UserDto>(`${this.API_USER_URL}/save`, body);
+  }
+
+  updateUser(body: UpdateUserRequest): Observable<UserDto> {
+    return this.http.post<UserDto>(`${this.API_USER_URL}/update`, body);
   }
 
   updateUserStatus(body: UpdateStatusRequest): Observable<boolean> {

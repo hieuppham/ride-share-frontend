@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { AdminService } from '../admin.service';
 import { Confirm } from 'src/app/interface/util';
 import {
-  FindUsersResponse,
   FindUsersAdminResponse,
   UserDto,
   UpdateStatusRequest,
@@ -50,7 +49,7 @@ export class UserComponent implements OnInit {
     });
   }
 
-  private updateRideStatus(): void {
+  private updateUserStatus(): void {
     const body: UpdateStatusRequest = {
       id: this.confirm.target,
       status: this.updateStatusPipe.transform(
@@ -108,7 +107,7 @@ export class UserComponent implements OnInit {
   onAcceptConfirm(): void {
     switch (this.confirm.action) {
       case 'updateUserStatus': {
-        this.updateRideStatus();
+        this.updateUserStatus();
         break;
       }
       default: {

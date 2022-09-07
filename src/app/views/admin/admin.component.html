@@ -1,16 +1,56 @@
-<div class="wrapper d-flex flex-column min-vh-100 bg-light dark:bg-transparent">
-  <!--app-header-->
-  <app-default-header
-    class="mb-4 d-print-none header header-sticky"
-    position="sticky"
-    sidebarId="sidebar"
-    [photoURL]="user?.photoURL!"
+<ng-container *ngIf="!loadAllDone">
+  <div
+    class="fade show d-flex flex-column align-items-center"
+    style="text-align: center; padding-top: calc(100vh / 2); height: 100vh"
   >
-  </app-default-header>
-
-  <div class="body flex-grow-1 px-3">
-    <c-container breakpoint="lg" class="h-auto">
-      <router-outlet></router-outlet>
-    </c-container>
+    <img
+      src="assets/favicon.png"
+      alt="Ride Share Logo"
+      style="width: 100px; height: 100px"
+    />
+    <div class="mt-3">
+      <i class="spinner-grow spinner-grow-sm"></i>
+      <span class="m-1"><b>Loading...</b></span>
+    </div>
   </div>
-</div>
+</ng-container>
+
+<ng-container *ngIf="loadAllDone">
+  <div id="main-container">
+    <div id="map" class="h-100"></div>
+    <div id="table-container" class="w-100 d-none">
+      <table id="table_id" class="display stripe hover order-column">
+        <thead>
+          <tr>
+            <th class="text-center"></th>
+            <th class="text-center">Phương tiện</th>
+            <th>Từ</th>
+            <th>Đến</th>
+            <th>Bắt đầu</th>
+            <th>Kết thúc dự kiến</th>
+            <th>Khoảng cách</th>
+            <th>Tiêu chí</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+  <div
+    class="wrapper d-flex flex-column min-vh-100 bg-light dark:bg-transparent"
+  >
+    <!--app-header-->
+    <app-default-header
+      class="mb-4 d-print-none header header-sticky"
+      position="sticky"
+      sidebarId="sidebar"
+      [photoURL]="user!.photoURL!"
+    >
+    </app-default-header>
+
+    <div class="body flex-grow-1 px-3">
+      <c-container breakpoint="lg" class="h-auto">
+        <router-outlet></router-outlet>
+      </c-container>
+    </div>
+  </div>
+</ng-container>

@@ -1,13 +1,13 @@
 import {
+  AfterContentInit,
+  AfterViewChecked,
   AfterViewInit,
   Component,
   ElementRef,
+  OnDestroy,
   OnInit,
-  QueryList,
   ViewChild,
-  ViewChildren,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -16,9 +16,8 @@ import {
   MapboxEvent,
   Marker,
   LngLatLike,
-  MapLayerMouseEvent,
-  LineLayer,
   Popup,
+  MapStyleDataEvent,
 } from 'mapbox-gl';
 import * as MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import * as MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
@@ -33,10 +32,11 @@ import {
 } from 'geojson';
 import {
   ITempImage,
-  ITempVehilceImage,
+  TempVehicleImage,
   ITempTarget,
   UserDto,
   FindUsersResponse,
+  UpdateUserRequest,
 } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
 import {
@@ -56,6 +56,10 @@ import {
   getEndSymbolLayer,
   addPopupToLayer,
   getPathCasingLayer,
+  addDataSources,
+  addRideLayer,
+  addRide,
+  removeRide,
 } from './util/geojson.function';
 import { Confirm } from 'src/app/interface/util';
 
@@ -75,34 +79,80 @@ import { DateInArrayPipe } from 'src/app/pipes/date-in-array.pipe';
 import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { ModalComponent } from '@coreui/angular';
-
+import { ENTITY_STATUS } from 'src/app/interface/entity-status';
+import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
+import { socketClient } from 'src/app/services/socket-client/socket.client';
+import {
+  ConnectInfo,
+  SocketMessage,
+} from 'src/app/interface/socket.interfaces';
 @Component({
   selector: 'app-mapbox',
   templateUrl: './mapbox.component.html',
   styleUrls: ['./mapbox.component.scss'],
 })
-export class MapboxComponent implements OnInit, AfterViewInit {
+export class MapboxComponent
+  implements AfterViewInit, OnDestroy, AfterContentInit
+{
   @ViewChild('imagePopup') imagePopup!: ElementRef<HTMLImageElement>;
   @ViewChild('rideInfoModal') rideInfoModal!: ModalComponent;
-
+  loadAllDone: boolean = false;
   constructor(
     private rideService: RideService,
     private userService: UserService,
     private router: Router,
     private authService: AuthService,
+    private storageService: StorageService,
     private vehiclePipe: VehiclePipe,
     private dateInArrayPipe: DateInArrayPipe,
+    private dateInMilisec: DateInMilisecPipe,
     private avatarPipe: AvatarPipe,
     private metricPipe: MetricPipe
   ) {}
 
-  private USER_STATUS_UNKNOWN: string = 'UNKNOWN';
-
-  ngOnInit(): void {
-    this.loadUser();
+  ngAfterViewInit(): void {
     this.loadMap();
+
+    initView(this);
+    this.loadTopLeft();
+    this.loadBottomLeft();
     this.findRidesByBound();
+    this.loadUser();
+    if (socketClient.disconnected) {
+      socketClient.connect();
+      socketClient.on('new-connect', (data: ConnectInfo) => {
+        this.numberOfOnlineUser = data.numberOfConnection;
+      });
+      socketClient.on('new-disconnect', (data: ConnectInfo) => {
+        this.numberOfOnlineUser = data.numberOfConnection;
+      });
+      socketClient.on('ride-added', (data: SocketMessage) => {
+        this.rideService.findSingleRideById(data.id).subscribe({
+          next: (res) => {
+            addRide(res.id, this, res.path, res.photoURL);
+            this.findRidesByBound();
+          },
+        });
+      });
+      socketClient.on('ride-removed', (data: SocketMessage) => {
+        removeRide(data.id, this);
+        this.findRidesByBound();
+      });
+    }
+    this.loadDataTable();
   }
+
+  ngAfterContentInit(): void {
+    this.loadAllDone = true;
+  }
+
+  ngOnDestroy(): void {
+    if (socketClient.connected) {
+      socketClient.disconnect();
+    }
+  }
+
+  numberOfOnlineUser: number = 0;
 
   // user
   formUserInfo: FormGroup = new FormGroup({
@@ -117,6 +167,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   });
   user: UserDto | undefined;
   userIdPhotoURL: string | undefined;
+  vehiclePhoto: TempVehicleImage[] = [];
 
   public get vehicles(): FormArray {
     return this.formUserInfo.get('vehicles') as FormArray;
@@ -150,34 +201,76 @@ export class MapboxComponent implements OnInit, AfterViewInit {
       next: (res: UserDto) => {
         this.user = res;
         this.userIsAdmin = res.email == environment.adminEmail;
-        if (res.status == this.USER_STATUS_UNKNOWN) {
-          this.formUserInfo.patchValue({ id: res.id, email: res.email });
-          this.toggleConfirmModal('newUser');
-        } else {
-          this.formUserInfo.patchValue({
-            id: res.id,
-            fullName: res.fullName,
-            phone: res.phone,
-            email: res.email,
-            userIdPhotoURL: res.userIdPhotoURL,
-          });
-          // res.vehicles.forEach((vehicle) => {});
-          this.userIdPhotoURL = res.userIdPhotoURL;
-
-          this.formSaveRide.patchValue({ uid: res.uid });
+        switch (res.status) {
+          case ENTITY_STATUS['UNKNOWN']: {
+            this.formUserInfo.patchValue({ id: res.id, email: res.email });
+            this.toggleConfirmModal('newUser');
+            break;
+          }
+          case ENTITY_STATUS['PENDING']: {
+            console.log(res.status);
+            break;
+          }
+          case ENTITY_STATUS['INACTIVE']: {
+            console.log(res.status);
+            break;
+          }
+          case ENTITY_STATUS['ACTIVE']: {
+            break;
+          }
+          default: {
+            console.log(res.status);
+            break;
+          }
         }
+
+        this.formUserInfo.patchValue({
+          id: res.id,
+          fullName: res.fullName,
+          phone: res.phone,
+          gender: res.gender,
+          dob: this.dateInMilisec.transform(res.dob, 'YYYY-MM-DD'),
+          email: res.email,
+          userIdPhotoURL: res.userIdPhotoURL,
+        });
+        // res.vehicles.forEach((vehicle) => {
+        //   this.vehicles.push({
+        //     id: vehicle.id,
+        //     type: vehicle.type,
+        //     name: vehicle.name,
+        //     lpn: vehicle.lpn,
+        //     lpnImage: vehicle.lpnImage,
+        //     image: vehicle.image,
+        //   });
+        //   this.vehiclePhoto.push({
+        //     id: vehicle.id,
+        //     lpnImage: vehicle.lpn,
+        //     image: vehicle.image,
+        //   });
+        // });
+        this.userIdPhotoURL = res.userIdPhotoURL;
+        this.formSaveRide.patchValue({ uid: res.uid });
       },
     });
   }
 
-  private dataTable: any = null;
+  // private setFormUserInfoValue(user: UserDto, formUserInfo: FormGroup): void {
+  //   formUserInfo.patchValue({
+  //     id: user.id,
+  //     fullName: user.fullName,
+  //     phone: user.phone,
+  //     email: user.email,
+  //     userIdPhotoURL: user.userIdPhotoURL,
+  //     dob: user.dob,
+  //     gender: user.gender,
+  //   });
 
-  ngAfterViewInit(): void {
-    this.loadDataTable();
-    initView(this);
-    this.loadTopLeft();
-    this.loadBottomLeft();
-  }
+  //   user.vehicles.forEach((v) => {
+  //     this.vehicles.push({});
+  //   });
+  // }
+
+  private dataTable: any = null;
 
   private loadUserLocation(): void {
     window.navigator.geolocation.getCurrentPosition(
@@ -186,8 +279,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
           lng: p.coords.longitude,
           lat: p.coords.latitude,
         };
-        new Marker({ color: '#dd0a21' }).setLngLat(location).addTo(this.mapRef);
-        this.mapRef.flyTo({ center: location, zoom: 14 });
+        new Marker({ color: '#dd0a21' }).setLngLat(location).addTo(this.map);
+        this.map.flyTo({ center: location, zoom: 14 });
       },
       console.error
     );
@@ -200,7 +293,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   saveRoute: Route | undefined;
 
-  mapRef!: Map;
+  map!: Map;
   photoURL: string = './assets/img/avatars/8.jpg';
 
   ctrlTopCenter!: HTMLDivElement;
@@ -239,54 +332,59 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   });
 
   async onSubmitFormUserInfo(): Promise<void> {
-    // try {
-    //   if (this._tmpTarget.userIdImage) {
-    //     const _userIdPhotoUrl: string = await this.storageService.upload(
-    //       this._tmpTarget.userIdImage?.files?.item(0)!,
-    //       this.user.uid,
-    //       'user'
-    //     );
-    //     this.formUserInfo.patchValue({
-    //       userIdPhotoUrl: _userIdPhotoUrl,
-    //     });
-    //   }
-    //   const _vLength: number = this.user.vehicles?.length!;
-    //   for (let [i, v] of this._tmpTarget.vehicleImages.entries()) {
-    //     const vehicleImageUrl: string = await this.storageService.upload(
-    //       v.vehicleImage?.files?.item(0)!,
-    //       this.user.uid,
-    //       'vehicle',
-    //       _vLength + i
-    //     );
-    //     const lpnImageUrl: string = await this.storageService.upload(
-    //       v.lpnImage?.files?.item(0)!,
-    //       this.user.uid,
-    //       'lpn',
-    //       _vLength + i
-    //     );
-    //     (
-    //       (this.formUserInfo.controls['vehicles'] as FormArray).controls[
-    //         _vLength + i
-    //       ] as FormGroup
-    //     ).patchValue({
-    //       image: vehicleImageUrl,
-    //       lpnImage: lpnImageUrl,
-    //     });
-    //   }
-    //   // this.userService.saveUser(this.formUserInfo.value as User).subscribe({
-    //   //   next: (res) => {
-    //   //     this.user = res;
-    //   //   },
-    //   //   error: (err) => console.error(err),
-    //   // });
-    // } catch (error: any) {
-    //   console.error(error);
-    //   let err: IError = {
-    //     code: 9999,
-    //     message: 'Đã có lỗi xảy ra :(',
-    //   };
-    //   this.showErrorModal(err);
-    // }
+    try {
+      if (this._tmpTarget.userIdImage) {
+        const _userIdPhotoURL: string = await this.storageService.upload(
+          this._tmpTarget.userIdImage!.files!.item(0)!,
+          this.user!.uid,
+          'user'
+        );
+        this.formUserInfo.patchValue({
+          userIdPhotoURL: _userIdPhotoURL,
+        });
+      }
+      const _vLength: number = this.user!.vehicles.length;
+      for (let [i, v] of this._tmpTarget.vehicleImages.entries()) {
+        const vehicleImageURL: string = await this.storageService.upload(
+          v.vehicleImage?.files?.item(0)!,
+          this.user!.uid,
+          'vehicle',
+          _vLength + i
+        );
+        const lpnImageUrl: string = await this.storageService.upload(
+          v.lpnImage?.files?.item(0)!,
+          this.user!.uid,
+          'lpn',
+          _vLength + i
+        );
+        (
+          (this.formUserInfo.controls['vehicles'] as FormArray).controls[
+            _vLength + i
+          ] as FormGroup
+        ).patchValue({
+          image: vehicleImageURL,
+          lpnImage: lpnImageUrl,
+        });
+      }
+
+      this.userService
+        .updateUser(this.formUserInfo.value as UpdateUserRequest)
+        .subscribe({
+          next: (res) => {
+            this.user = res;
+          },
+          error: (err) => console.error(err),
+        });
+    } catch (error: any) {
+      console.error(error);
+      let err: Error = {
+        code: '9999',
+        message: 'Đã có lỗi xảy ra :(',
+      };
+      console.log(err);
+
+      // this.showErrorModal(err);
+    }
   }
 
   private onSubmitFormSaveRide(): void {
@@ -327,14 +425,14 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   }
 
   userIsAdmin: boolean = false;
-  loadMap(): void {
-    this.mapRef = new Map(MAPBOX_OPTIONS);
-    this.mapRef.on('load', (e: MapboxEvent<undefined> & EventData) => {
+  private loadMap(): void {
+    this.map = new Map(MAPBOX_OPTIONS);
+    this.map.on('load', (e: MapStyleDataEvent & EventData) => {
       this.loadAllRides();
       this.loadUserLocation();
     });
 
-    this.mapRef.on(
+    this.map.on(
       'moveend',
       (
         e: MapboxEvent<MouseEvent | TouchEvent | WheelEvent | undefined> &
@@ -441,8 +539,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   private findRidesByBound(): void {
     this.rideService
       .findRidesByBound(
-        this.mapRef.getBounds().getSouthWest().toArray(),
-        this.mapRef.getBounds().getNorthEast().toArray()
+        this.map.getBounds().getSouthWest().toArray(),
+        this.map.getBounds().getNorthEast().toArray()
       )
       .subscribe({
         next: (res) => {
@@ -460,47 +558,22 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.rideService.findAllRides().subscribe({
       next: (res) => {
         res.forEach((ride) => {
-          this.addDataSources(ride.id, ride.path);
-          this.addRideLayer(ride.id, ride.photoURL);
+          addRide(ride.id, this, ride.path, ride.photoURL);
         });
       },
-    });
-  }
-
-  private addDataSources(
-    id: string,
-    path: Feature<LineString, GeoJsonProperties>
-  ): void {
-    this.mapRef.addSource(`${id}-path`, { type: 'geojson', data: path });
-    this.mapRef.addSource(`${id}-start-point`, {
-      type: 'geojson',
-      data: extractStartPoint(path),
-    });
-    this.mapRef.addSource(`${id}-end-point`, {
-      type: 'geojson',
-      data: extractEndPoint(path),
     });
   }
 
   popup: Popup = new Popup({
     closeButton: true,
   });
-  private addRideLayer(id: string, photoURL: string): void {
-    this.mapRef.addLayer(getPathCasingLayer(id));
-    this.mapRef.addLayer(getPathLayer(id));
-    this.mapRef.addLayer(getStartPointLayer(id));
-    this.mapRef.addLayer(getStartSymbolLayer(id));
-    this.mapRef.addLayer(getEndPointLayer(id));
-    this.mapRef.addLayer(getEndSymbolLayer(id));
-    addPopupToLayer(id, this, photoURL);
-  }
 
   private loadTopLeft(): void {
-    this.mapRef.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
+    this.map.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
     $(() => {
       $('div.mapboxgl-ctrl-top-left')
-        .append($('div#filter-vehicle'))
         .append($('div#search-user'))
+        .append($('div#online-users'))
         .addClass('d-flex');
 
       $('div.mapboxgl-ctrl-top-left > *').css('height', '36px');
@@ -512,7 +585,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         '#map > div.mapboxgl-control-container > div.mapboxgl-ctrl-bottom-left > div > a'
       ).remove();
 
-      this.mapRef.addControl(
+      this.map.addControl(
         new MapboxDirections({
           accessToken: environment.mapbox.accessToken,
           profile: 'mapbox/driving',
@@ -577,7 +650,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     userIdImage: null,
     vehicleImages: [],
   };
-  vehiclePhoto: ITempVehilceImage[] = [];
   private fileReader: FileReader = new FileReader();
   onSelectFile(event: Event, type: string, index?: number): void {
     const target: HTMLInputElement = event.target as HTMLInputElement;
@@ -683,7 +755,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     action: '',
   };
   confirmModalVisible: boolean = false;
-  toggleConfirmModal(action: string): void {
+  toggleConfirmModal(action?: string): void {
     switch (action) {
       case 'newUser': {
         this.confirm = {
@@ -742,7 +814,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
         break;
       }
-      case 'saveUserInfo': {
+      case 'updateUser': {
         this.confirm = {
           title: 'Cập nhật thông tin tài khoản',
           dismiss: 'Hủy',
@@ -787,8 +859,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     for (let i = 0; i < var2; i++) {
       let id = (var1[i] as FindRidesResponse).id;
       var3.push(id);
-      this.mapRef.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
-      this.mapRef.setPaintProperty(
+      this.map.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
+      this.map.setPaintProperty(
         `${id}-path-casing`,
         'line-color',
         COLOR['pink-dark']
@@ -797,8 +869,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     }
 
     this.oldLineIds.forEach((i) => {
-      this.mapRef.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
-      this.mapRef.setPaintProperty(
+      this.map.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
+      this.map.setPaintProperty(
         `${i}-path-casing`,
         'line-color',
         COLOR['blue-dark']
@@ -827,7 +899,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         this.signOutApp();
         break;
       }
-      case 'saveUserInfo': {
+      case 'updateUser': {
         this.onSubmitFormUserInfo();
         break;
       }
@@ -848,6 +920,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         break;
       }
     }
-    this.confirmModalVisible = !this.confirmModalVisible;
+    this.toggleConfirmModal();
   }
 }

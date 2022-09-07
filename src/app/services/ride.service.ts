@@ -57,6 +57,14 @@ export class RideService {
     );
   }
 
+  findSingleRideById(id: string): Observable<FindRidesResponse> {
+    const request: FindByIdRequest = { id: id };
+    return this.http.post<FindRidesResponse>(
+      `${this.API_URL_RIDE}/find-single-ride-by-id`,
+      request
+    );
+  }
+
   findRidesByBound(
     bottomLeft: number[],
     upperRight: number[]

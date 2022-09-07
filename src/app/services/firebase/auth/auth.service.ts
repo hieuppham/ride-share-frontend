@@ -10,7 +10,7 @@ import {
 import { UserService } from 'src/app/services/user.service';
 import { app } from '../index';
 import { Router } from '@angular/router';
-
+import { socketClient } from '../../socket-client/socket.client';
 import * as user from '../../../interface/user';
 @Injectable({
   providedIn: 'root',
@@ -46,6 +46,7 @@ export class AuthService {
       .then((res) => {
         localStorage.clear();
         this.router.navigate(['/']);
+        socketClient.disconnect();
       })
       .catch((error) => {
         console.error(error);

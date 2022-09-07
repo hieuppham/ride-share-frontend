@@ -7,7 +7,7 @@ import {
   GeoJsonProperties,
   Geometry,
 } from 'geojson';
-import {
+import mapboxgl, {
   CircleLayer,
   EventData,
   LineLayer,
@@ -255,11 +255,11 @@ export function addPopupToLayer(
   mapboxComponent: MapboxComponent,
   photoURL: string
 ): void {
-  mapboxComponent.mapRef.on(
+  mapboxComponent.map.on(
     'mouseenter',
     `${id}-path`,
     (e: MapLayerMouseEvent & EventData) => {
-      mapboxComponent.mapRef.getCanvas().style.cursor = 'pointer';
+      mapboxComponent.map.getCanvas().style.cursor = 'pointer';
       mapboxComponent.imagePopup.nativeElement.src = photoURL;
       mapboxComponent.imagePopup.nativeElement.className = 'block';
       mapboxComponent.imagePopup.nativeElement.addEventListener(
@@ -271,9 +271,62 @@ export function addPopupToLayer(
       mapboxComponent.popup
         .setLngLat(e.lngLat)
         .setDOMContent(mapboxComponent.imagePopup.nativeElement)
-        .addTo(mapboxComponent.mapRef);
+        .addTo(mapboxComponent.map);
     }
   );
+}
+
+export function addRide(
+  id: string,
+  mapboxComponent: MapboxComponent,
+  path: Feature<LineString, GeoJsonProperties>,
+  photoURL: string
+): void {
+  addDataSources(id, mapboxComponent.map, path);
+  addRideLayer(id, mapboxComponent, photoURL);
+}
+
+export function removeRide(id: string, mapboxComponent: MapboxComponent): void {
+  mapboxComponent.map.removeLayer(`${id}-path-casing`);
+  mapboxComponent.map.removeLayer(`${id}-path`);
+  mapboxComponent.map.removeLayer(`${id}-start-point-origin`);
+  mapboxComponent.map.removeLayer(`${id}-start-point-label`);
+  mapboxComponent.map.removeLayer(`${id}-end-point-origin`);
+  mapboxComponent.map.removeLayer(`${id}-end-point-label`);
+  mapboxComponent.popup.remove();
+  mapboxComponent.map.removeSource(`${id}-path`);
+  mapboxComponent.map.removeSource(`${id}-start-point`);
+  mapboxComponent.map.removeSource(`${id}-end-point`);
+}
+
+export function addDataSources(
+  id: string,
+  map: Map,
+  path: Feature<LineString, GeoJsonProperties>
+): void {
+  map.addSource(`${id}-path`, { type: 'geojson', data: path });
+  map.addSource(`${id}-start-point`, {
+    type: 'geojson',
+    data: extractStartPoint(path),
+  });
+  map.addSource(`${id}-end-point`, {
+    type: 'geojson',
+    data: extractEndPoint(path),
+  });
+}
+
+export function addRideLayer(
+  id: string,
+  mapboxComponent: MapboxComponent,
+  photoURL: string
+): void {
+  mapboxComponent.map.addLayer(getPathCasingLayer(id));
+  mapboxComponent.map.addLayer(getPathLayer(id));
+  mapboxComponent.map.addLayer(getStartPointLayer(id));
+  mapboxComponent.map.addLayer(getStartSymbolLayer(id));
+  mapboxComponent.map.addLayer(getEndPointLayer(id));
+  mapboxComponent.map.addLayer(getEndSymbolLayer(id));
+  addPopupToLayer(id, mapboxComponent, photoURL);
 }
 
 export {
