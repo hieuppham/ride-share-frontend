@@ -19,6 +19,7 @@ import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { FormsModule } from '@angular/forms';
 import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
+import { IconModule } from '@coreui/icons-angular';
 @NgModule({
   imports: [
     CardModule,
@@ -31,6 +32,7 @@ import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
     ToastModule,
     PipeModule,
     FormsModule,
+    IconModule,
   ],
   declarations: [MapboxComponent],
   providers: [

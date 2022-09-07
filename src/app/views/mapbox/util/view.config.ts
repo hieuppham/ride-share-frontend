@@ -33,7 +33,7 @@ function initView(mapBoxComponent: MapboxComponent): void {
     .append(mapBoxComponent.ctrlTopCenter);
 
   // bottom right
-  mapBoxComponent.mapRef.addControl(new NavigationControl(), 'bottom-right');
+  mapBoxComponent.map.addControl(new NavigationControl(), 'bottom-right');
 
   (
     mapBoxComponent.ctrlBottomRight.getElementsByClassName(

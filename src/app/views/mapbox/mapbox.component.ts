@@ -1,7 +1,10 @@
 import {
+  AfterContentInit,
+  AfterViewChecked,
   AfterViewInit,
   Component,
   ElementRef,
+  OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
@@ -14,6 +17,7 @@ import {
   Marker,
   LngLatLike,
   Popup,
+  MapStyleDataEvent,
 } from 'mapbox-gl';
 import * as MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import * as MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
@@ -52,6 +56,10 @@ import {
   getEndSymbolLayer,
   addPopupToLayer,
   getPathCasingLayer,
+  addDataSources,
+  addRideLayer,
+  addRide,
+  removeRide,
 } from './util/geojson.function';
 import { Confirm } from 'src/app/interface/util';
 
@@ -73,16 +81,22 @@ import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { ModalComponent } from '@coreui/angular';
 import { ENTITY_STATUS } from 'src/app/interface/entity-status';
 import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
-
+import { socketClient } from 'src/app/services/socket-client/socket.client';
+import {
+  ConnectInfo,
+  SocketMessage,
+} from 'src/app/interface/socket.interfaces';
 @Component({
   selector: 'app-mapbox',
   templateUrl: './mapbox.component.html',
   styleUrls: ['./mapbox.component.scss'],
 })
-export class MapboxComponent implements OnInit, AfterViewInit {
+export class MapboxComponent
+  implements AfterViewInit, OnDestroy, AfterContentInit
+{
   @ViewChild('imagePopup') imagePopup!: ElementRef<HTMLImageElement>;
   @ViewChild('rideInfoModal') rideInfoModal!: ModalComponent;
-
+  loadAllDone: boolean = false;
   constructor(
     private rideService: RideService,
     private userService: UserService,
@@ -96,11 +110,49 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     private metricPipe: MetricPipe
   ) {}
 
-  ngOnInit(): void {
-    this.loadUser();
+  ngAfterViewInit(): void {
     this.loadMap();
+
+    initView(this);
+    this.loadTopLeft();
+    this.loadBottomLeft();
     this.findRidesByBound();
+    this.loadUser();
+    if (socketClient.disconnected) {
+      socketClient.connect();
+      socketClient.on('new-connect', (data: ConnectInfo) => {
+        this.numberOfOnlineUser = data.numberOfConnection;
+      });
+      socketClient.on('new-disconnect', (data: ConnectInfo) => {
+        this.numberOfOnlineUser = data.numberOfConnection;
+      });
+      socketClient.on('ride-added', (data: SocketMessage) => {
+        this.rideService.findSingleRideById(data.id).subscribe({
+          next: (res) => {
+            addRide(res.id, this, res.path, res.photoURL);
+            this.findRidesByBound();
+          },
+        });
+      });
+      socketClient.on('ride-removed', (data: SocketMessage) => {
+        removeRide(data.id, this);
+        this.findRidesByBound();
+      });
+    }
+    this.loadDataTable();
   }
+
+  ngAfterContentInit(): void {
+    this.loadAllDone = true;
+  }
+
+  ngOnDestroy(): void {
+    if (socketClient.connected) {
+      socketClient.disconnect();
+    }
+  }
+
+  numberOfOnlineUser: number = 0;
 
   // user
   formUserInfo: FormGroup = new FormGroup({
@@ -220,13 +272,6 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   private dataTable: any = null;
 
-  ngAfterViewInit(): void {
-    this.loadDataTable();
-    initView(this);
-    this.loadTopLeft();
-    this.loadBottomLeft();
-  }
-
   private loadUserLocation(): void {
     window.navigator.geolocation.getCurrentPosition(
       (p: GeolocationPosition) => {
@@ -234,8 +279,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
           lng: p.coords.longitude,
           lat: p.coords.latitude,
         };
-        new Marker({ color: '#dd0a21' }).setLngLat(location).addTo(this.mapRef);
-        this.mapRef.flyTo({ center: location, zoom: 14 });
+        new Marker({ color: '#dd0a21' }).setLngLat(location).addTo(this.map);
+        this.map.flyTo({ center: location, zoom: 14 });
       },
       console.error
     );
@@ -248,7 +293,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
 
   saveRoute: Route | undefined;
 
-  mapRef!: Map;
+  map!: Map;
   photoURL: string = './assets/img/avatars/8.jpg';
 
   ctrlTopCenter!: HTMLDivElement;
@@ -380,14 +425,14 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   }
 
   userIsAdmin: boolean = false;
-  loadMap(): void {
-    this.mapRef = new Map(MAPBOX_OPTIONS);
-    this.mapRef.on('load', (e: MapboxEvent<undefined> & EventData) => {
+  private loadMap(): void {
+    this.map = new Map(MAPBOX_OPTIONS);
+    this.map.on('load', (e: MapStyleDataEvent & EventData) => {
       this.loadAllRides();
       this.loadUserLocation();
     });
 
-    this.mapRef.on(
+    this.map.on(
       'moveend',
       (
         e: MapboxEvent<MouseEvent | TouchEvent | WheelEvent | undefined> &
@@ -494,8 +539,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
   private findRidesByBound(): void {
     this.rideService
       .findRidesByBound(
-        this.mapRef.getBounds().getSouthWest().toArray(),
-        this.mapRef.getBounds().getNorthEast().toArray()
+        this.map.getBounds().getSouthWest().toArray(),
+        this.map.getBounds().getNorthEast().toArray()
       )
       .subscribe({
         next: (res) => {
@@ -513,47 +558,22 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     this.rideService.findAllRides().subscribe({
       next: (res) => {
         res.forEach((ride) => {
-          this.addDataSources(ride.id, ride.path);
-          this.addRideLayer(ride.id, ride.photoURL);
+          addRide(ride.id, this, ride.path, ride.photoURL);
         });
       },
-    });
-  }
-
-  private addDataSources(
-    id: string,
-    path: Feature<LineString, GeoJsonProperties>
-  ): void {
-    this.mapRef.addSource(`${id}-path`, { type: 'geojson', data: path });
-    this.mapRef.addSource(`${id}-start-point`, {
-      type: 'geojson',
-      data: extractStartPoint(path),
-    });
-    this.mapRef.addSource(`${id}-end-point`, {
-      type: 'geojson',
-      data: extractEndPoint(path),
     });
   }
 
   popup: Popup = new Popup({
     closeButton: true,
   });
-  private addRideLayer(id: string, photoURL: string): void {
-    this.mapRef.addLayer(getPathCasingLayer(id));
-    this.mapRef.addLayer(getPathLayer(id));
-    this.mapRef.addLayer(getStartPointLayer(id));
-    this.mapRef.addLayer(getStartSymbolLayer(id));
-    this.mapRef.addLayer(getEndPointLayer(id));
-    this.mapRef.addLayer(getEndSymbolLayer(id));
-    addPopupToLayer(id, this, photoURL);
-  }
 
   private loadTopLeft(): void {
-    this.mapRef.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
+    this.map.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
     $(() => {
       $('div.mapboxgl-ctrl-top-left')
-        .append($('div#filter-vehicle'))
         .append($('div#search-user'))
+        .append($('div#online-users'))
         .addClass('d-flex');
 
       $('div.mapboxgl-ctrl-top-left > *').css('height', '36px');
@@ -565,7 +585,7 @@ export class MapboxComponent implements OnInit, AfterViewInit {
         '#map > div.mapboxgl-control-container > div.mapboxgl-ctrl-bottom-left > div > a'
       ).remove();
 
-      this.mapRef.addControl(
+      this.map.addControl(
         new MapboxDirections({
           accessToken: environment.mapbox.accessToken,
           profile: 'mapbox/driving',
@@ -839,8 +859,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     for (let i = 0; i < var2; i++) {
       let id = (var1[i] as FindRidesResponse).id;
       var3.push(id);
-      this.mapRef.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
-      this.mapRef.setPaintProperty(
+      this.map.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
+      this.map.setPaintProperty(
         `${id}-path-casing`,
         'line-color',
         COLOR['pink-dark']
@@ -849,8 +869,8 @@ export class MapboxComponent implements OnInit, AfterViewInit {
     }
 
     this.oldLineIds.forEach((i) => {
-      this.mapRef.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
-      this.mapRef.setPaintProperty(
+      this.map.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
+      this.map.setPaintProperty(
         `${i}-path-casing`,
         'line-color',
         COLOR['blue-dark']
