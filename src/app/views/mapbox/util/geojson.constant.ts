@@ -3,11 +3,15 @@ import { environment } from '../../../../environments/environment';
 import { MapboxOptions } from 'mapbox-gl';
 import { coordinatesGeocoder } from './geojson.function';
 
+export const MAP_URL: string = 'mapbox://styles/mapbox/';
+export const MAP_STYLE_STREETS: string = 'streets-v11';
+export const MAP_STYLE_DARK: string = 'dark-v10';
+
 const MAPBOX_OPTIONS: MapboxOptions = {
   accessToken: environment.mapbox.accessToken,
   container: 'map',
-  style: 'mapbox://styles/mapbox/streets-v11',
-  zoom: 0,
+  style: MAP_URL + MAP_STYLE_STREETS,
+  zoom: 5,
   center: [106.95859399778641, 16.78288117290175],
 };
 

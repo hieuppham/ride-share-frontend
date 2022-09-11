@@ -10,12 +10,16 @@
       <c-nav-item>
         <a cNavLink routerLink="/admin/user"> Quản trị người dùng </a>
       </c-nav-item>
-      <c-nav-item>
-        <a cNavLink routerLink="/admin/activity"> Hoạt động </a>
+      <!-- <c-nav-item>
+        <a cNavLink routerLink="/admin/activity"> Thống kê</a>
       </c-nav-item>
+      <c-nav-item>
+        <a cNavLink routerLink="/admin/config"> Cấu hình</a>
+      </c-nav-item> -->
     </c-header-nav>
     <c-header-nav class="ms-3">
-      <c-avatar shape="rounded-3" size="md" [src]="photoURL"> </c-avatar>
+      <c-avatar *ngIf="photoURL" shape="rounded-3" size="md" [src]="photoURL">
+      </c-avatar>
     </c-header-nav>
   </c-container>
 </ng-container>

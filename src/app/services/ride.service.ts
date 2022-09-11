@@ -11,6 +11,7 @@ import {
   FindRideDetailResponse,
 } from '../interface/ride';
 import { UpdateStatusRequest } from '../interface/user';
+import { ResponseBody } from '../interface/util';
 @Injectable({
   providedIn: 'root',
 })
@@ -18,8 +19,8 @@ export class RideService {
   private API_URL_RIDE: string = environment.apiUrl + '/ride';
   constructor(private http: HttpClient) {}
 
-  saveRide(request: SaveRideRequest): Observable<RideDto> {
-    return this.http.post<RideDto>(`${this.API_URL_RIDE}/save`, request);
+  saveRide(request: SaveRideRequest): Observable<ResponseBody> {
+    return this.http.post<ResponseBody>(`${this.API_URL_RIDE}/save`, request);
   }
 
   updateRideStatus(request: UpdateStatusRequest): Observable<boolean> {
