@@ -45,7 +45,6 @@ export class UserComponent implements OnInit {
         this.users = res;
       },
       error: (err) => console.error(err),
-      complete: () => console.log('done'),
     });
   }
 
@@ -60,7 +59,6 @@ export class UserComponent implements OnInit {
     };
     this.userService.updateUserStatus(body).subscribe({
       next: (res) => {
-        console.log(res);
       },
       error: (err) => {
         console.error(err);

@@ -19,23 +19,14 @@ import {
   Marker,
   LngLatLike,
   Popup,
-  MapStyleDataEvent,
 } from 'mapbox-gl';
 import * as MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import * as MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
 import { Path, Route } from 'src/app/interface/route';
 import { RideService } from '../../services/ride.service';
 import { StorageService } from '../../services/firebase/storage/storage.service';
+
 import {
-  Feature,
-  FeatureCollection,
-  LineString,
-  GeoJsonProperties,
-} from 'geojson';
-import {
-  ITempImage,
-  TempVehicleImage,
-  ITempTarget,
   UserDto,
   FindUsersResponse,
   UpdateUserRequest,
@@ -46,11 +37,9 @@ import {
   FindRidesResponse,
   SaveRideRequest,
   FindRideDetailResponse,
-  FindRidesByBoundRequest,
 } from 'src/app/interface/ride';
 
 import {
-  dateArrayToDateTimeLocal,
   addRide,
   removeRide,
 } from './util/geojson.function';
@@ -66,9 +55,6 @@ import {
   GEOCODER_OPT_SEARCH,
   MAPBOX_OPTIONS,
   COLOR,
-  MAP_STYLE_STREETS,
-  MAP_URL,
-  MAP_STYLE_DARK,
 } from './util/geojson.constant';
 import { Error } from 'src/app/interface/util';
 import $ from 'jquery';
@@ -217,9 +203,9 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     this.vehicles.controls.splice(index, 1);
   }
 
-  removeAllVehicles(): void {
-    this.vehicles.controls = [];
-  }
+  // removeAllVehicles(): void {
+  //   this.vehicles.controls = [];
+  // }
   // end user
   private async loadUser(): Promise<void> {
     this.user = await this.userService
@@ -307,10 +293,10 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  public rideResponseDtoFeatureCollection: FeatureCollection = {
-    type: 'FeatureCollection',
-    features: [],
-  };
+  // public rideResponseDtoFeatureCollection: FeatureCollection = {
+  //   type: 'FeatureCollection',
+  //   features: [],
+  // };
 
   saveRoute: Route | undefined;
 
@@ -884,27 +870,26 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
   }
 
   // helper
-  private oldLineIds: string[] = [];
+  dataTableIds: string[] = [];
   private changeLinesColor(): void {
-    const var1 = ($('#table_id').dataTable().api() as any)
+    const data = ($('#table_id').dataTable().api() as any)
       .rows({ page: 'current' })
       .data();
 
-    const var2 = var1.length;
-    let var3: string[] = [];
-    for (let i = 0; i < var2; i++) {
-      let id = (var1[i] as FindRidesResponse).id;
-      var3.push(id);
+    let _temp: string[] = [];
+    for (let i = 0; i < data.length; i++) {
+      let id = (data[i] as FindRidesResponse).id;
+      _temp.push(id);
       this.map.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
       this.map.setPaintProperty(
         `${id}-path-casing`,
         'line-color',
         COLOR['pink-dark']
       );
-      this.oldLineIds = this.oldLineIds.filter((i) => i != id);
+      this.dataTableIds = this.dataTableIds.filter((i) => i != id);
     }
 
-    this.oldLineIds.forEach((i) => {
+    this.dataTableIds.forEach((i) => {
       this.map.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
       this.map.setPaintProperty(
         `${i}-path-casing`,
@@ -912,7 +897,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
         COLOR['blue-dark']
       );
     });
-    this.oldLineIds = var3;
+    this.dataTableIds = _temp;
   }
 
   //listener

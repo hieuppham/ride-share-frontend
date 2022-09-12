@@ -81,7 +81,6 @@ export class RideComponent implements OnInit {
     };
     this.rideService.updateRideStatus(body).subscribe({
       next: (res) => {
-        console.log(res);
       },
       error: (err) => {
         console.error(err);

@@ -13,9 +13,9 @@ import {
   MapLayerMouseEvent,
   SymbolLayer,
 } from 'mapbox-gl';
-import { COLOR } from './geojson.constant';
+import {COLOR} from './geojson.constant';
 import 'datatables.net';
-import { MapboxComponent } from '../mapbox.component';
+import {MapboxComponent} from '../mapbox.component';
 
 function coordinatesGeocoder(query: string): any {
   const matches = query.match(
@@ -61,6 +61,7 @@ function coordinatesGeocoder(query: string): any {
 
   return geocodes;
 }
+
 function pointToCoordinates(
   point: Feature<Point, GeoJsonProperties>
 ): number[] {
@@ -282,6 +283,7 @@ export function addRide(
 }
 
 export function removeRide(id: string, mapboxComponent: MapboxComponent): void {
+  mapboxComponent.dataTableIds = mapboxComponent.dataTableIds.filter(i => i !== id);
   if (mapboxComponent.map.getLayer(`${id}-path-casing`)) {
     mapboxComponent.map.removeLayer(`${id}-path-casing`);
   }
@@ -328,7 +330,7 @@ export function addDataSources(
   map: Map,
   path: Feature<LineString, GeoJsonProperties>
 ): void {
-  map.addSource(`${id}-path`, { type: 'geojson', data: path });
+  map.addSource(`${id}-path`, {type: 'geojson', data: path});
   map.addSource(`${id}-start-point`, {
     type: 'geojson',
     data: extractStartPoint(path),
