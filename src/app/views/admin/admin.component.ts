@@ -1,9 +1,7 @@
-import { AfterContentInit, Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { AfterContentInit, Component, OnDestroy } from '@angular/core';
 import { UserDto } from 'src/app/interface/user';
 import { socketClient } from 'src/app/services/socket-client/socket.client';
 import { UserService } from 'src/app/services/user.service';
-
 @Component({
   selector: 'app-admin',
   styleUrls: ['admin.component.scss'],

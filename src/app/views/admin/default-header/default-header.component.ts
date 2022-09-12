@@ -1,5 +1,4 @@
 import { Component, Input } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
 
 import { ClassToggleService, HeaderComponent } from '@coreui/angular';
 
@@ -9,7 +8,7 @@ import { ClassToggleService, HeaderComponent } from '@coreui/angular';
 })
 export class DefaultHeaderComponent extends HeaderComponent {
   @Input() sidebarId: string = 'sidebar';
-  @Input() photoURL: string = './assets/img/avatars/8.jpg';
+  @Input() photoURL: string | undefined = './assets/img/avatars/8.jpg';
 
   public newMessages = new Array(4);
   public newTasks = new Array(5);

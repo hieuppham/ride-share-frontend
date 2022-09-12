@@ -38,7 +38,9 @@
                 <div>{{ ride.distance | metric }}</div>
               </td>
               <td class="text-center">
-                {{ ride.status | status }}
+                <span class="bg-green color-white">{{
+                  ride.status | status
+                }}</span>
               </td>
               <td class="text-center">
                 <button

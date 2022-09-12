@@ -8,6 +8,7 @@ import { AvatarPipe } from './avatar.pipe';
 import { UpdateStatusPipe } from './update-status.pipe';
 import { MetricPipe } from './metric.pipe';
 import { DateInMilisecPipe } from './date-in-milisec.pipe';
+import { DateLocalPipe } from './date-local.pipe';
 
 @NgModule({
   declarations: [
@@ -19,6 +20,7 @@ import { DateInMilisecPipe } from './date-in-milisec.pipe';
     UpdateStatusPipe,
     MetricPipe,
     DateInMilisecPipe,
+    DateLocalPipe,
   ],
   imports: [CommonModule],
   exports: [
@@ -30,6 +32,7 @@ import { DateInMilisecPipe } from './date-in-milisec.pipe';
     UpdateStatusPipe,
     MetricPipe,
     DateInMilisecPipe,
+    DateLocalPipe,
   ],
 })
 export class PipeModule {}

@@ -14,225 +14,240 @@
     </div>
   </div>
 </ng-container>
-<ng-container *ngIf="loadAllDone">
-  <div id="main-container">
-    <div id="map" class="h-100"></div>
-    <div id="table-container" class="w-100 d-none">
-      <table id="table_id" class="display stripe hover order-column">
-        <thead>
-          <tr>
-            <th class="text-center"></th>
-            <th class="text-center">Phương tiện</th>
-            <th>Từ</th>
-            <th>Đến</th>
-            <th>Bắt đầu</th>
-            <th>Kết thúc dự kiến</th>
-            <th>Khoảng cách</th>
-            <th>Tiêu chí</th>
-          </tr>
-        </thead>
-      </table>
-    </div>
-  </div>
 
-  <div id="bottom-left-container" class="d-flex align-items-end">
-    <div class="d-flex flex-column">
-      <form id="form-ride-share" class="d-none ms-0" [formGroup]="formSaveRide">
-        <div>
-          <input formControlName="id" class="d-none" />
-          <input formControlName="userId" class="d-none" />
-          <input
-            formControlName="startTime"
-            class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
-            type="datetime-local"
-            id="time-start-share"
-          />
-          <input
-            formControlName="endTime"
-            class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
-            type="datetime-local"
-            id="time-end"
-          />
-          <select
-            formControlName="vehicleId"
-            class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
-          >
-            <option
-              *ngFor="let v of this.user?.vehicles; let i = index"
-              [value]="v.id"
-            >
+<div
+  id="main-container"
+  [ngClass]="{
+    'd-flex flex-column vw-100 vh-100 align-items-center': true,
+    'd-none': !loadAllDone
+  }"
+>
+  <div id="map" class="vw-100 vh-100"></div>
+  <div id="table-container" class="vw-100 d-none">
+    <table id="table_id" class="display stripe hover order-column">
+      <thead>
+        <tr>
+          <th class="text-center"></th>
+          <th class="text-center">Phương tiện</th>
+          <th>Từ</th>
+          <th>Đến</th>
+          <th>Bắt đầu</th>
+          <th>Kết thúc dự kiến</th>
+          <th>Khoảng cách</th>
+          <th>Tiêu chí</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</div>
+
+<div id="bottom-left-container" class="d-flex align-items-end">
+  <div class="d-flex flex-column">
+    <form id="form-ride-share" class="d-none ms-0" [formGroup]="formSaveRide">
+      <div>
+        <input formControlName="id" class="d-none" />
+        <input formControlName="userId" class="d-none" />
+        <input
+          formControlName="startTime"
+          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+          type="datetime-local"
+          [attr.min]="getDateNow() | dateTimeLocal: 'after10mins'"
+          [attr.max]="getDateNow() | dateTimeLocal: 'after1day'"
+          id="time-start-share"
+        />
+        <input
+          formControlName="endTime"
+          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+          type="datetime-local"
+          [attr.min]="getDateNow() | dateTimeLocal: 'after10mins'"
+          [attr.max]="getDateNow() | dateTimeLocal: 'after1day'"
+          id="time-end"
+        />
+        <select
+          formControlName="vehicleId"
+          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+        >
+          <option value="" selected disabled>Phương tiện</option>
+          <ng-container *ngFor="let v of this.user?.vehicles; let i = index">
+            <option [value]="v.id">
               {{ v.name }}
             </option>
-          </select>
-          <input
-            formControlName="criterions"
-            class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
-            type="text"
-            id="criterions"
-            placeholder="Tiêu chí"
-          />
-          <div
-            class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0 px-1 py-1"
-          >
-            <textarea
-              formControlName="note"
-              id="note"
-              cols="27"
-              rows="10"
-              placeholder="Ghi chú"
-            ></textarea>
-          </div>
-        </div>
-        <button
-          id="btn-form-submit"
-          type="button"
-          (click)="toggleConfirmModal('saveRide')"
-          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl green-background-white-text ms-0"
+          </ng-container>
+        </select>
+        <input
+          formControlName="criterions"
+          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+          type="text"
+          id="criterions"
+          placeholder="Tiêu chí"
+        />
+        <div
+          class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0 px-1 py-1"
         >
-          Xác nhận
-        </button>
-      </form>
+          <textarea
+            formControlName="note"
+            id="note"
+            cols="27"
+            rows="10"
+            placeholder="Ghi chú"
+          ></textarea>
+        </div>
+      </div>
       <button
-        id="btn-toggle-share"
-        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
-        (click)="toggleFormSaveRide()"
+        id="btn-form-submit"
+        type="button"
+        (click)="toggleConfirmModal('saveRide')"
+        [ngClass]="{
+          'mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl color-white ms-0': true,
+          'bg-green': formSaveRide.valid,
+          'bg-grey': !formSaveRide.valid
+        }"
+        [disabled]="!formSaveRide.valid"
       >
-        Chia sẻ hành trình
+        Xác nhận
       </button>
-    </div>
-
+    </form>
     <button
-      (click)="toggleMyRidesModal()"
-      id="btn-toggle-show-my-rides"
-      class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+      id="btn-toggle-share"
+      class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+      (click)="toggleFormSaveRide()"
     >
-      Hành trình của tôi
+      Chia sẻ hành trình
     </button>
   </div>
 
-  <div id="search-user" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-    <svg
-      class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-search"
-      viewBox="0 0 18 18"
-      xml:space="preserve"
-      width="18"
-      height="18"
-    >
-      <path
-        d="M7.4 2.5c-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9c1 0 1.8-.2 2.5-.8l3.7 3.7c.2.2.4.3.8.3.7 0 1.1-.4 1.1-1.1 0-.3-.1-.5-.3-.8L11.4 10c.4-.8.8-1.6.8-2.5.1-2.8-2.1-5-4.8-5zm0 1.6c1.8 0 3.2 1.4 3.2 3.2s-1.4 3.2-3.2 3.2-3.3-1.3-3.3-3.1 1.4-3.3 3.3-3.3z"
-      ></path>
-    </svg>
-    <input
-      class="mapboxgl-ctrl-geocoder--input"
-      placeholder="Tìm người dùng"
-      title="Tìm người dùng theo SĐT, email và tên"
-      aria-label="Tìm người dùng theo SĐT, email và tên"
-      (keyup)="onSearchUser($event)"
-    />
-    <div class="suggestions-wrapper">
-      <ul class="suggestions">
-        <ng-container *ngFor="let u of findUsesByTextResult">
-          <li>
-            <a>
-              <div
-                class="mapboxgl-ctrl-geocoder--suggestion"
-                (click)="chosenSearchUser = u; toggleSearchUserModal()"
-              >
-                <div class="mapboxgl-ctrl-geocoder--suggestion-title">
-                  {{ u.fullName }}
-                </div>
-                <div class="mapboxgl-ctrl-geocoder--suggestion-address">
-                  {{ u.email }}
-                </div>
+  <button
+    (click)="toggleMyRidesModal()"
+    id="btn-toggle-show-my-rides"
+    class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+  >
+    Hành trình của tôi
+  </button>
+</div>
+
+<div id="search-user" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+  <svg
+    class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-search"
+    viewBox="0 0 18 18"
+    xml:space="preserve"
+    width="18"
+    height="18"
+  >
+    <path
+      d="M7.4 2.5c-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9c1 0 1.8-.2 2.5-.8l3.7 3.7c.2.2.4.3.8.3.7 0 1.1-.4 1.1-1.1 0-.3-.1-.5-.3-.8L11.4 10c.4-.8.8-1.6.8-2.5.1-2.8-2.1-5-4.8-5zm0 1.6c1.8 0 3.2 1.4 3.2 3.2s-1.4 3.2-3.2 3.2-3.3-1.3-3.3-3.1 1.4-3.3 3.3-3.3z"
+    ></path>
+  </svg>
+  <input
+    class="mapboxgl-ctrl-geocoder--input"
+    placeholder="Tìm người dùng"
+    title="Tìm người dùng theo SĐT, email và tên"
+    aria-label="Tìm người dùng theo SĐT, email và tên"
+    (keyup)="onSearchUser($event)"
+  />
+  <div class="suggestions-wrapper">
+    <ul class="suggestions">
+      <ng-container *ngFor="let u of findUsesByTextResult">
+        <li>
+          <a>
+            <div
+              class="mapboxgl-ctrl-geocoder--suggestion"
+              (click)="chosenSearchUser = u; toggleSearchUserModal()"
+            >
+              <div class="mapboxgl-ctrl-geocoder--suggestion-title">
+                {{ u.fullName }}
               </div>
-            </a>
-          </li>
-        </ng-container>
-      </ul>
-    </div>
-    <div class="mapboxgl-ctrl-geocoder--pin-right">
-      <button
-        aria-label="Clear"
-        class="mapboxgl-ctrl-geocoder--button"
-        style="display: none"
-      >
-        <svg
-          class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-close"
-          viewBox="0 0 18 18"
-          xml:space="preserve"
-          width="18"
-          height="18"
-        >
-          <path
-            d="M3.8 2.5c-.6 0-1.3.7-1.3 1.3 0 .3.2.7.5.8L7.2 9 3 13.2c-.3.3-.5.7-.5 1 0 .6.7 1.3 1.3 1.3.3 0 .7-.2 1-.5L9 10.8l4.2 4.2c.2.3.7.3 1 .3.6 0 1.3-.7 1.3-1.3 0-.3-.2-.7-.3-1l-4.4-4L15 4.6c.3-.2.5-.5.5-.8 0-.7-.7-1.3-1.3-1.3-.3 0-.7.2-1 .3L9 7.1 4.8 2.8c-.3-.1-.7-.3-1-.3z"
-          ></path>
-        </svg></button
-      ><svg
-        class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-loading"
+              <div class="mapboxgl-ctrl-geocoder--suggestion-address">
+                {{ u.email }}
+              </div>
+            </div>
+          </a>
+        </li>
+      </ng-container>
+    </ul>
+  </div>
+  <div class="mapboxgl-ctrl-geocoder--pin-right">
+    <button
+      aria-label="Clear"
+      class="mapboxgl-ctrl-geocoder--button"
+      style="display: none"
+    >
+      <svg
+        class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-close"
         viewBox="0 0 18 18"
         xml:space="preserve"
         width="18"
         height="18"
-        style="display: none"
       >
         <path
-          fill="#333"
-          d="M4.4 4.4l.8.8c2.1-2.1 5.5-2.1 7.6 0l.8-.8c-2.5-2.5-6.7-2.5-9.2 0z"
+          d="M3.8 2.5c-.6 0-1.3.7-1.3 1.3 0 .3.2.7.5.8L7.2 9 3 13.2c-.3.3-.5.7-.5 1 0 .6.7 1.3 1.3 1.3.3 0 .7-.2 1-.5L9 10.8l4.2 4.2c.2.3.7.3 1 .3.6 0 1.3-.7 1.3-1.3 0-.3-.2-.7-.3-1l-4.4-4L15 4.6c.3-.2.5-.5.5-.8 0-.7-.7-1.3-1.3-1.3-.3 0-.7.2-1 .3L9 7.1 4.8 2.8c-.3-.1-.7-.3-1-.3z"
         ></path>
-        <path
-          opacity=".1"
-          d="M12.8 12.9c-2.1 2.1-5.5 2.1-7.6 0-2.1-2.1-2.1-5.5 0-7.7l-.8-.8c-2.5 2.5-2.5 6.7 0 9.2s6.6 2.5 9.2 0 2.5-6.6 0-9.2l-.8.8c2.2 2.1 2.2 5.6 0 7.7z"
-        ></path>
-      </svg>
-    </div>
+      </svg></button
+    ><svg
+      class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-loading"
+      viewBox="0 0 18 18"
+      xml:space="preserve"
+      width="18"
+      height="18"
+      style="display: none"
+    >
+      <path
+        fill="#333"
+        d="M4.4 4.4l.8.8c2.1-2.1 5.5-2.1 7.6 0l.8-.8c-2.5-2.5-6.7-2.5-9.2 0z"
+      ></path>
+      <path
+        opacity=".1"
+        d="M12.8 12.9c-2.1 2.1-5.5 2.1-7.6 0-2.1-2.1-2.1-5.5 0-7.7l-.8-.8c-2.5 2.5-2.5 6.7 0 9.2s6.6 2.5 9.2 0 2.5-6.6 0-9.2l-.8.8c2.2 2.1 2.2 5.6 0 7.7z"
+      ></path>
+    </svg>
   </div>
+</div>
 
-  <!-- search user modal -->
-  <c-modal
-    #searchUserModal
-    alignment="center"
-    id="showSearchUserModal"
-    [visible]="searchUserModalVisible"
-  >
-    <c-modal-header>
-      <h5 cModalTitle>Thông tin người dùng</h5>
-      <button
-        (click)="toggleSearchUserModal()"
-        class="btn-close"
-        aria-label="Close"
-      ></button>
-    </c-modal-header>
-    <c-modal-body>
-      <ng-container *ngIf="chosenSearchUser">
-        <div class="d-flex flex-column align-items-center">
-          <c-avatar
-            id="user-avatar"
-            shape="rounded-3"
-            size="xl"
-            src="{{ chosenSearchUser.photoURL }}"
-            class="avatar avatar-md rounded-1 text-primary"
-          >
-          </c-avatar>
-          <div class="mt-3 d-flex flex-column">
-            <p class="my-1">
-              <span class="hl hl-lightgrey w-fit">{{
-                chosenSearchUser.fullName
-              }}</span>
-              <span class="hl hl-lightgrey w-fit">{{
-                chosenSearchUser.gender | gender
-              }}</span>
-            </p>
-            <span class="hl hl-lightgrey w-fit my-1">{{
-              chosenSearchUser!.phone
+<!-- search user modal -->
+<c-modal
+  #searchUserModal
+  alignment="center"
+  id="showSearchUserModal"
+  [visible]="searchUserModalVisible"
+>
+  <c-modal-header>
+    <h5 cModalTitle>Thông tin người dùng</h5>
+    <button
+      (click)="toggleSearchUserModal()"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <c-modal-body>
+    <ng-container *ngIf="chosenSearchUser">
+      <div class="d-flex flex-column align-items-center">
+        <c-avatar
+          id="user-avatar"
+          shape="rounded-3"
+          size="xl"
+          src="{{ chosenSearchUser.photoURL }}"
+          class="avatar avatar-md rounded-1 text-primary"
+        >
+        </c-avatar>
+        <div class="mt-3 d-flex flex-column">
+          <p class="my-1">
+            <span class="hl hl-lightgrey w-fit">{{
+              chosenSearchUser.fullName
             }}</span>
-            <span class="hl hl-lightgrey w-fit my-1">{{
-              chosenSearchUser!.email
+            <span class="hl hl-lightgrey w-fit">{{
+              chosenSearchUser.gender | gender
             }}</span>
-          </div>
+          </p>
+          <span class="hl hl-lightgrey w-fit my-1">{{
+            chosenSearchUser!.phone
+          }}</span>
+          <span class="hl hl-lightgrey w-fit my-1">{{
+            chosenSearchUser!.email
+          }}</span>
         </div>
-      </ng-container>
-    </c-modal-body>
-    <!-- <c-modal-footer>
+      </div>
+    </ng-container>
+  </c-modal-body>
+  <!-- <c-modal-footer>
     <div class="modal-footer">
       <button
         class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
@@ -252,538 +267,523 @@
       </button>
     </div>
   </c-modal-footer> -->
-  </c-modal>
-  <!-- end search user modal -->
+</c-modal>
+<!-- end search user modal -->
 
-  <div id="online-users" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl">
-    <svg
-      cIcon
-      [name]="'cilWalk'"
-      size="xl"
-      class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-search"
-    ></svg>
-    <input
-      class="mapboxgl-ctrl-geocoder--input text-center ps-3 pe-0"
-      [value]="numberOfOnlineUser"
-      readonly
-    />
-  </div>
+<div id="online-users" class="mapboxgl-ctrl-geocoder mapboxgl-ctrl">
+  <svg
+    cIcon
+    [name]="'cilUser'"
+    size="lg"
+    class="mapboxgl-ctrl-geocoder--icon mapboxgl-ctrl-geocoder--icon-search"
+  ></svg>
+  <input
+    class="mapboxgl-ctrl-geocoder--input text-center ps-3 pe-0"
+    [value]="numberOfOnlineUser"
+    title="Số người dùng trực tuyến"
+    aria-label="Số người dùng trực tuyến"
+    readonly
+  />
+</div>
 
-  <!-- my rides modal -->
-  <c-modal
-    #myRidesModal
-    alignment="center"
-    id="myRidesModal"
-    [visible]="myRidesModalVisible"
-    scrollable
-  >
-    <c-modal-header>
-      <h5 cModalTitle>Danh sách hành trình</h5>
-      <button
-        (click)="toggleMyRidesModal()"
-        class="btn-close"
-        aria-label="Close"
-      ></button>
-    </c-modal-header>
-    <c-modal-body>
-      <!-- inactive ride -->
-      <ng-container *ngFor="let ride of myRide; let i = index">
-        <div class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl list-item">
-          <h5 class="text-center pb-2">
-            <span class="hl hl-lightgrey">{{ ride.startPointTitle }}</span
-            ><span class="hl hl-lightgrey">{{ ride.endPointTitle }}</span>
-          </h5>
-          <p class="text-center">
-            <span class="hl hl-lightgrey">{{
-              ride.startTime | dateInArray
-            }}</span
-            ><span class="hl hl-lightgrey">{{
-              ride.endTime | dateInArray
-            }}</span>
-          </p>
-          <p>
-            <span class="hl hl-lightgrey">{{ ride.status | status }}</span>
+<!-- my rides modal -->
+<c-modal
+  #myRidesModal
+  alignment="center"
+  id="myRidesModal"
+  [visible]="myRidesModalVisible"
+  scrollable
+>
+  <c-modal-header>
+    <h5 cModalTitle>Danh sách hành trình</h5>
+    <button
+      (click)="toggleMyRidesModal()"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <c-modal-body>
+    <!-- inactive ride -->
+    <ng-container *ngFor="let ride of myRide; let i = index">
+      <div class="ride-user mapboxgl-ctrl-geocoder mapboxgl-ctrl list-item">
+        <h5 class="text-center pb-2">
+          <span class="hl hl-lightgrey">{{ ride.startPointTitle }}</span
+          ><span class="hl hl-lightgrey">{{ ride.endPointTitle }}</span>
+        </h5>
+        <p class="text-center">
+          <span class="hl hl-lightgrey">{{ ride.startTime | dateInArray }}</span
+          ><span class="hl hl-lightgrey">{{ ride.endTime | dateInArray }}</span>
+        </p>
+        <p>
+          <span class="hl hl-lightgrey">{{ ride.status | status }}</span>
+          <ng-container *ngIf="ride.criterions.length > 0">
             <ng-container *ngFor="let c of ride.criterions">
               <span class="hl hl-lightgrey">{{ c }}</span>
             </ng-container>
-          </p>
-          <div class="d-flex justify-content-between">
-            <button
-              class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-red color-white px-3"
-            >
-              {{ !isActiveRide(ride.status) ? "Chia sẻ" : "Dừng chia sẻ" }}
-            </button>
-            <button
-              (click)="
-                setFormSaveRideValue(ride.id);
-                toggleFormSaveRide(true);
-                toggleMyRidesModal()
-              "
-              class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-green color-white px-3"
-            >
-              Cập nhật
-            </button>
-          </div>
+          </ng-container>
+        </p>
+        <div class="d-flex justify-content-between">
+          <button
+            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-red color-white px-3"
+          >
+            {{ ride.status | updateStatus }}
+          </button>
+          <button
+            (click)="
+              setFormSaveRideValue(ride.id);
+              toggleFormSaveRide(true);
+              toggleMyRidesModal()
+            "
+            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-green color-white px-3"
+          >
+            Cập nhật
+          </button>
         </div>
-      </ng-container>
-    </c-modal-body>
-  </c-modal>
-  <!-- end my rides modal -->
-
-  <!-- modal confirm  -->
-  <c-modal
-    #cofirmModal
-    alignment="center"
-    id="cofirmModal"
-    [visible]="confirmModalVisible"
-    scrollable
-  >
-    <c-modal-header>
-      <h5 cModalTitle>{{ confirm.title }}<b> </b></h5>
-      <button
-        (click)="toggleConfirmModal('close')"
-        class="btn-close"
-        aria-label="Close"
-      ></button>
-    </c-modal-header>
-    <c-modal-footer>
-      <div class="modal-footer">
-        <button
-          class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-          cButton
-          type="button"
-          (click)="
-            toggleConfirmModal(
-              confirm.action == 'newUser' ? 'signOutNotInUserInfo' : 'close'
-            )
-          "
-        >
-          {{ confirm.dismiss }}
-        </button>
-        <button
-          class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-          cButton
-          type="button"
-          (click)="onAcceptConfirm()"
-        >
-          {{ confirm.accept }}
-        </button>
       </div>
-    </c-modal-footer>
-  </c-modal>
-  <!-- end modal confirm -->
+    </ng-container>
+  </c-modal-body>
+</c-modal>
+<!-- end my rides modal -->
 
-  <!-- notify -->
-  <c-modal
-    #notifyAddRideModal
-    alignment="center"
-    id="notifyAddRideModal"
-    [visible]="false"
-  >
-    <c-modal-header>
-      <h5 cModalTitle><b>Thành công</b></h5>
-    </c-modal-header>
-    <c-modal-body>
-      <p>Hành trình của bạn đã được lưu lại và chờ duyệt</p>
-    </c-modal-body>
-  </c-modal>
-  <!-- end notify -->
-
-  <div class="mapboxgl-ctrl-top-center">
+<!-- modal confirm  -->
+<c-modal
+  #cofirmModal
+  alignment="center"
+  id="cofirmModal"
+  [visible]="confirmModalVisible"
+  scrollable
+>
+  <c-modal-header>
+    <h5 cModalTitle>{{ confirm.title }}<b> </b></h5>
     <button
-      id="btn-toggle-profile"
-      (click)="toggleUserInfoModal()"
-      cButton
-      class="py-0 nav-link btn"
-      ng-reflect-caret="false"
+      (click)="toggleConfirmModal('close')"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <c-modal-footer>
+    <div class="modal-footer">
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
+        cButton
+        type="button"
+        (click)="
+          toggleConfirmModal(
+            confirm.action == 'newUser' ? 'signOutNotInUserInfo' : 'close'
+          )
+        "
+      >
+        {{ confirm.dismiss }}
+      </button>
+      <button
+        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
+        cButton
+        type="button"
+        (click)="onAcceptConfirm()"
+      >
+        {{ confirm.accept }}
+      </button>
+    </div>
+  </c-modal-footer>
+</c-modal>
+<!-- end modal confirm -->
+
+<div class="mapboxgl-ctrl-top-center">
+  <button
+    id="btn-toggle-profile"
+    (click)="toggleUserInfoModal()"
+    cButton
+    class="py-0 nav-link btn"
+    ng-reflect-caret="false"
+  >
+    <c-avatar
+      ctextcolor="primary"
+      shape="rounded-1"
+      size="md"
+      *ngIf="this.user"
+      src="{{ this.user!.photoURL }}"
+      class="avatar avatar-md rounded-1 text-primary"
+    >
+    </c-avatar>
+  </button>
+
+  <button
+    *ngIf="userIsAdmin"
+    (click)="navigateToAdminPage()"
+    id="btn-admin-page"
+    class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input bg-red color-white w-mapbox"
+  >
+    Trang quản trị
+  </button>
+</div>
+
+<c-modal
+  #rideInfoModal
+  alignment="center"
+  id="rideInfoModal"
+  [visible]="rideInfoModalVisible"
+>
+  <c-modal-header>
+    <h5 cModalTitle>Thông tin hành trình</h5>
+    <button
+      id="btn-close-modal"
+      class="btn-close"
+      aria-label="Close"
+      (click)="this.toggleRideInfoModal()"
+    ></button>
+  </c-modal-header>
+  <c-modal-body>
+    <div
+      class="d-flex flex-column align-items-center"
+      *ngIf="this.rideDetailInfo"
     >
       <c-avatar
-        ctextcolor="primary"
+        id="user-avatar"
         shape="rounded-1"
-        size="md"
-        *ngIf="this.user"
-        src="{{ this.user.photoURL }}"
+        size="xl"
+        *ngIf="this.rideDetailInfo"
+        src="{{ this.rideDetailInfo.user.photoURL }}"
         class="avatar avatar-md rounded-1 text-primary"
       >
       </c-avatar>
-    </button>
-    <button
-      *ngIf="userIsAdmin"
-      (click)="navigateToAdminPage()"
-      id="btn-admin-page"
-      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input bg-red color-white w-mapbox"
-    >
-      Trang quản trị
-    </button>
-  </div>
+      <div class="d-flex flex-column align-items-center my-3">
+        <h5 class="mb-3">
+          <span class="hl hl-green">{{
+            this.rideDetailInfo.startPointTitle
+          }}</span>
+          <span class="hl hl-red">{{ this.rideDetailInfo.endPointTitle }}</span>
+        </h5>
+        <span class="mb-2"
+          ><span class="hl hl-green">{{
+            this.rideDetailInfo.startTime | dateInArray
+          }}</span>
+          <span class="hl hl-red">{{
+            this.rideDetailInfo.endTime | dateInArray
+          }}</span></span
+        >
 
-  <c-modal
-    #rideInfoModal
-    alignment="center"
-    id="rideInfoModal"
-    [visible]="rideInfoModalVisible"
-  >
-    <c-modal-header>
-      <h5 cModalTitle>Thông tin hành trình</h5>
-      <button
-        id="btn-close-modal"
-        class="btn-close"
-        aria-label="Close"
-        (click)="this.toggleRideInfoModal()"
-      ></button>
-    </c-modal-header>
+        <span class="hl hl-lightgrey mb-2">{{
+          this.rideDetailInfo.distance | metric
+        }}</span>
+
+        <span class="mb-2">
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.vehicle.type | vehicle
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.vehicle.name
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.vehicle.lpn
+          }}</span>
+        </span>
+
+        <span class="d-flex flex-column w-100 mt-3">
+          <span class="mb-2">
+            <ng-container *ngIf="this.rideDetailInfo.criterions.length > 0">
+              <ng-container *ngFor="let c of this.rideDetailInfo.criterions">
+                <span class="hl hl-lightgrey">{{ c }}</span></ng-container
+              ></ng-container
+            >
+          </span>
+          <ng-container *ngIf="this.rideDetailInfo.note">
+            <span class="hl hl-lightgrey">
+              {{ this.rideDetailInfo.note }}
+            </span></ng-container
+          >
+        </span>
+      </div>
+      <div class="d-flex flex-column align-items-start w-100">
+        <span class="mb-2">
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.fullName
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.gender | gender
+          }}</span></span
+        >
+        <span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.phone
+          }}</span>
+          <span class="hl hl-lightgrey">{{
+            this.rideDetailInfo.user.email
+          }}</span></span
+        >
+      </div>
+    </div>
+  </c-modal-body>
+</c-modal>
+
+<!-- user info -->
+<c-modal
+  #userInfoModal
+  size="lg"
+  alignment="center"
+  id="userInfoModal"
+  [visible]="userInfoModalVisible"
+>
+  <c-modal-header>
+    <h5 cModalTitle>Thông tin người dùng</h5>
+    <button
+      (click)="toggleUserInfoModal()"
+      id="btn-close-modal"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <form id="form-user-info" [formGroup]="formUserInfo">
     <c-modal-body>
-      <div
-        class="d-flex flex-column align-items-center"
-        *ngIf="this.rideDetailInfo"
-      >
+      <div id="user-info" class="d-flex flex-column align-items-center">
         <c-avatar
           id="user-avatar"
           shape="rounded-1"
           size="xl"
-          *ngIf="this.rideDetailInfo"
-          src="{{ this.rideDetailInfo.user.photoURL }}"
+          *ngIf="this.user"
+          src="{{ this.user.photoURL }}"
           class="avatar avatar-md rounded-1 text-primary"
         >
         </c-avatar>
-        <div class="d-flex flex-column align-items-center my-3">
-          <h5 class="mb-3">
-            <span class="hl hl-green">{{
-              this.rideDetailInfo.startPointTitle
-            }}</span>
-            <span class="hl hl-red">{{
-              this.rideDetailInfo.endPointTitle
-            }}</span>
-          </h5>
-          <span class="mb-2"
-            ><span class="hl hl-green">{{
-              this.rideDetailInfo.startTime | dateInArray
-            }}</span>
-            <span class="hl hl-red">{{
-              this.rideDetailInfo.endTime | dateInArray
-            }}</span></span
-          >
 
-          <span class="hl hl-lightgrey mb-2">{{
-            this.rideDetailInfo.distance | metric
-          }}</span>
-
-          <span class="mb-2">
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.vehicle.type | vehicle
-            }}</span>
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.vehicle.name
-            }}</span>
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.vehicle.lpn
-            }}</span>
-          </span>
-
-          <span class="d-flex flex-column w-100 mt-3">
-            <span class="mb-2">
-              <ng-container *ngFor="let c of this.rideDetailInfo.criterions">
-                <span class="hl hl-lightgrey">{{ c }}</span></ng-container
-              >
-            </span>
-            <span class="hl hl-lightgrey">
-              {{ this.rideDetailInfo.note }}
-            </span>
-          </span>
-        </div>
-        <div class="d-flex flex-column align-items-start w-100">
-          <span class="mb-2">
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.user.fullName
-            }}</span>
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.user.gender | gender
-            }}</span></span
-          >
-          <span>
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.user.phone
-            }}</span>
-            <span class="hl hl-lightgrey">{{
-              this.rideDetailInfo.user.email
-            }}</span></span
-          >
-        </div>
-      </div>
-    </c-modal-body>
-  </c-modal>
-
-  <!-- user info -->
-  <c-modal
-    #userInfoModal
-    size="lg"
-    alignment="center"
-    id="userInfoModal"
-    [visible]="userInfoModalVisible"
-  >
-    <c-modal-header>
-      <h5 cModalTitle>Thông tin người dùng</h5>
-      <button
-        (click)="toggleUserInfoModal()"
-        id="btn-close-modal"
-        class="btn-close"
-        aria-label="Close"
-      ></button>
-    </c-modal-header>
-    <form id="form-user-info" [formGroup]="formUserInfo">
-      <c-modal-body>
-        <div id="user-info" class="d-flex flex-column align-items-center">
-          <c-avatar
-            id="user-avatar"
-            shape="rounded-1"
-            size="xl"
-            *ngIf="this.user"
-            src="{{ this.user.photoURL }}"
-            class="avatar avatar-md rounded-1 text-primary"
-          >
-          </c-avatar>
-
-          <div id="input-user-info" class="d-flex flex-column w-100 flew-wrap">
-            <div class="d-flex flex-row w-100">
-              <div
-                id="user-id-image"
-                class="d-flex flex-column align-items-center w-50 h-100"
-              >
+        <div id="input-user-info" class="d-flex flex-column w-100 flew-wrap">
+          <div class="d-flex flex-row w-100">
+            <div
+              id="user-id-image"
+              class="d-flex flex-column align-items-center w-50 h-100"
+            >
+              <ng-container *ngIf="this.imageTarget.userIdPhotoURL">
                 <input
-                  *ngIf="userIdPhotoURL"
-                  [src]="userIdPhotoURL"
+                  [src]="this.imageTarget.userIdPhotoURL"
                   height="240px"
                   width="240px"
                   type="image"
                 />
-                <input
-                  style="max-width: 240px; width: auto"
-                  class="input-fix mt-2"
-                  type="file"
-                  accept="image/png, image/jpg,  image/jpeg, image/raw"
-                  (change)="onSelectFile($event, 'userIdImage')"
-                />
-                <input
-                  type="text"
-                  formControlName="userIdPhotoURL"
-                  class="d-none"
-                />
-              </div>
-
-              <div
-                id="text-user-info"
-                class="w-50 h-100 d-flex flex-column align-items-center"
-              >
-                <input formControlName="id" type="text" class="d-none" />
-
-                <input
-                  formControlName="fullName"
-                  id="full-name"
-                  type="text"
-                  class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-                  placeholder="Tên đầy đủ"
-                  required
-                />
-
-                <input
-                  formControlName="dob"
-                  id="dob"
-                  type="date"
-                  class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-                  placeholder="Ngày sinh"
-                  required
-                />
-
-                <select
-                  formControlName="gender"
-                  id="gender"
-                  class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-                >
-                  <option value="both" selected>Giới tính</option>
-                  <option value="female">Nữ</option>
-                  <option value="male">Nam</option>
-                </select>
-
-                <input
-                  formControlName="phone"
-                  id="phone"
-                  type="text"
-                  class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-                  placeholder="Số điện thoại"
-                  required
-                />
-
-                <input
-                  type="text"
-                  formControlName="email"
-                  class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-                  placeholder="Email"
-                  readonly
-                />
-              </div>
-            </div>
-            <div id="vehicle-info w-100 h-100">
-              <ng-container formArrayName="vehicles">
-                <ng-container
-                  *ngFor="let v of vehicles.controls; let i = index"
-                >
-                  <div
-                    class="vehicle-item d-flex my-5 justify-content-around"
-                    [formGroupName]="i"
-                  >
-                    <div class="d-flex flex-column mx-1">
-                      <select
-                        [id]="'type-' + i"
-                        formControlName="type"
-                        class="mb-2 input-fix mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                      >
-                        <option value="motobike" selected>Xe máy</option>
-                        <option value="car">Ô tô</option>
-                      </select>
-                      <button
-                        class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                        (click)="removeVehicle(i)"
-                      >
-                        -
-                      </button>
-                    </div>
-                    <div class="d-flex flex-column mx-1">
-                      <input
-                        [id]="'vehicle-' + i"
-                        type="text"
-                        class="mb-2 input-fix mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                        formControlName="name"
-                        placeholder="Tên phương tiện"
-                      />
-                      <!-- image -->
-                      <input
-                        *ngIf="vehiclePhoto[i]"
-                        [src]="vehiclePhoto[i].image"
-                        height="240px"
-                        width="240px"
-                        type="image"
-                        class="mb-2"
-                      />
-                      <input
-                        class="input-fix input-fix-file"
-                        type="file"
-                        accept="image/png, image/jpg,  image/jpeg, image/raw"
-                        (change)="onSelectFile($event, 'vehicleImage', i)"
-                      />
-                      <input
-                        class="d-none"
-                        type="text"
-                        formControlName="image"
-                      />
-                      <!-- end image -->
-                    </div>
-                    <div class="d-flex flex-column mx-1">
-                      <input
-                        [id]="'lpn-' + i"
-                        type="text"
-                        class="mb-2 mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                        formControlName="lpn"
-                        placeholder="Biển số"
-                      />
-
-                      <!-- license plate number image -->
-                      <input
-                        *ngIf="vehiclePhoto[i]"
-                        [src]="vehiclePhoto[i].lpnImage"
-                        height="240px"
-                        width="240px"
-                        type="image"
-                        class="mb-2"
-                      />
-                      <input
-                        class="input-fix input-fix-file"
-                        type="file"
-                        accept="image/png, image/jpg,  image/jpeg, image/raw"
-                        (change)="onSelectFile($event, 'lpnImage', i)"
-                      />
-                      <input
-                        class="d-none"
-                        type="text"
-                        formControlName="lpnImage"
-                      />
-                      <!-- end license plate number image -->
-                    </div>
-                  </div>
-                </ng-container>
               </ng-container>
-              <div class="d-flex justify-content-center">
-                <button
-                  class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
-                  (click)="addVehicle()"
+
+              <input
+                style="max-width: 240px; width: auto"
+                class="input-fix mt-2"
+                type="file"
+                accept="image/png, image/jpg,  image/jpeg, image/raw"
+                (change)="onSelectFile($event, 'userIdPhotoImage')"
+              />
+              <input
+                type="text"
+                formControlName="userIdPhotoURL"
+                class="d-none"
+              />
+            </div>
+
+            <div
+              id="text-user-info"
+              class="w-50 h-100 d-flex flex-column align-items-center"
+            >
+              <input formControlName="id" type="text" class="d-none" />
+              <input
+                formControlName="fullName"
+                id="full-name"
+                type="text"
+                class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Tên đầy đủ"
+                required
+              />
+
+              <input
+                formControlName="dob"
+                id="dob"
+                type="date"
+                class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Ngày sinh"
+                required
+              />
+
+              <select
+                formControlName="gender"
+                class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+              >
+                <option value="" selected disabled>Giới tính</option>
+                <option value="female">Nữ</option>
+                <option value="male">Nam</option>
+              </select>
+
+              <input
+                formControlName="phone"
+                id="phone"
+                type="text"
+                class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Số điện thoại"
+                required
+              />
+
+              <input
+                type="text"
+                formControlName="email"
+                class="mb-2 mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
+                placeholder="Email"
+                readonly
+              />
+            </div>
+          </div>
+          <div id="vehicle-info w-100 h-100">
+            <ng-container formArrayName="vehicles">
+              <ng-container *ngFor="let v of vehicles.controls; let i = index">
+                <div
+                  class="vehicle-item d-flex my-5 justify-content-around"
+                  [formGroupName]="i"
                 >
-                  +
-                </button>
-              </div>
+                  <input type="number" formControlName="id" class="d-none" />
+                  <div class="d-flex flex-column mx-1">
+                    <select
+                      formControlName="type"
+                      class="mb-2 input-fix mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+                    >
+                      <option value="" selected disabled>Phương tiện</option>
+                      <option value="motobike">Xe máy</option>
+                      <option value="car">Ô tô</option>
+                    </select>
+                    <button
+                      class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+                      (click)="removeVehicle(i)"
+                    >
+                      -
+                    </button>
+                  </div>
+                  <div class="d-flex flex-column mx-1">
+                    <input
+                      type="text"
+                      class="mb-2 input-fix mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+                      formControlName="name"
+                      placeholder="Tên phương tiện"
+                    />
+                    <!-- image -->
+                    <ng-container *ngIf="this.imageTarget.vehilceImage[i]">
+                      <input
+                        [src]="this.imageTarget.vehilceImage[i].imageURL"
+                        height="240px"
+                        width="240px"
+                        type="image"
+                        class="mb-2"
+                      />
+                    </ng-container>
+                    <input
+                      class="input-fix input-fix-file"
+                      type="file"
+                      accept="image/png, image/jpg,  image/jpeg, image/raw"
+                      (change)="onSelectFile($event, 'image', i)"
+                    />
+                    <input class="d-none" type="text" formControlName="image" />
+                    <!-- end image -->
+                  </div>
+                  <div class="d-flex flex-column mx-1">
+                    <input
+                      type="text"
+                      class="mb-2 mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+                      formControlName="lpn"
+                      placeholder="Biển số"
+                    />
+
+                    <!-- license plate number image -->
+                    <ng-container *ngIf="this.imageTarget.vehilceImage[i]">
+                      <input
+                        [src]="this.imageTarget.vehilceImage[i].lpnImageURL"
+                        height="240px"
+                        width="240px"
+                        type="image"
+                        class="mb-2"
+                      />
+                    </ng-container>
+                    <input
+                      class="input-fix input-fix-file"
+                      type="file"
+                      accept="image/png, image/jpg,  image/jpeg, image/raw"
+                      (change)="onSelectFile($event, 'lpnImage', i)"
+                    />
+                    <input
+                      class="d-none"
+                      type="text"
+                      formControlName="lpnImage"
+                    />
+                    <!-- end license plate number image -->
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+            <div class="d-flex justify-content-center">
+              <button
+                class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+                (click)="addVehicle()"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
-      </c-modal-body>
-      <c-modal-footer>
-        <div class="modal-footer">
-          <button
-            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-            cButton
-            (click)="toggleConfirmModal('updateUser')"
-          >
-            Cập nhật thông tin
-          </button>
-          <button
-            class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-            cButton
-            type="button"
-            (click)="toggleConfirmModal('signOut')"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </c-modal-footer>
-    </form>
-  </c-modal>
-  <!-- end user info -->
-
-  <c-modal
-    #errorModal
-    alignment="center"
-    id="errorAlertModal"
-    [visible]="errorModalVisible"
-  >
-    <c-modal-header>
-      <h5 cModalTitle><b>Lỗi :(</b></h5>
-      <button
-        (click)="toggleErrorModal()"
-        id="btn-close-modal"
-        class="btn-close"
-        aria-label="Close"
-      ></button>
-    </c-modal-header>
-    <c-modal-body>
-      <p>{{ error.message }}</p>
-      <small> CODE: {{ error.code }} </small>
+      </div>
     </c-modal-body>
-  </c-modal>
+    <c-modal-footer>
+      <div class="modal-footer">
+        <button
+          [ngClass]="{
+            'mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input color-white': true,
+            'bg-green': formUserInfo.valid,
+            'bg-grey': !formUserInfo.valid
+          }"
+          [disabled]="!formUserInfo.valid"
+          cButton
+          (click)="toggleConfirmModal('updateUser')"
+        >
+          Cập nhật thông tin
+        </button>
+        <button
+          class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
+          cButton
+          type="button"
+          (click)="toggleConfirmModal('signOut')"
+        >
+          Đăng xuất
+        </button>
+      </div>
+    </c-modal-footer>
+  </form>
+</c-modal>
+<!-- end user info -->
 
-  <div id="toggle-table-container">
+<c-modal
+  #errorModal
+  alignment="center"
+  id="errorAlertModal"
+  [visible]="errorModalVisible"
+>
+  <c-modal-header>
+    <h5 cModalTitle><b>Lỗi :(</b></h5>
     <button
-      id="btn-toggle-table"
-      title="Ctrl + X"
-      class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input"
-      type="button"
-      (click)="toggleDataTable()"
-    >
-      Danh sách hành trình
-    </button>
-  </div>
+      (click)="toggleErrorModal()"
+      id="btn-close-modal"
+      class="btn-close"
+      aria-label="Close"
+    ></button>
+  </c-modal-header>
+  <c-modal-body>
+    <p>
+      {{ error.message }}
+    </p>
+  </c-modal-body>
+</c-modal>
 
-  <img
-    #imagePopup
-    id="popup-image"
-    class="d-none"
-    alt="popup-image"
-    style="border-radius: 50%; width: 40px"
-  />
-</ng-container>
+<button
+  id="btn-toggle-table"
+  title="Ctrl + X"
+  class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+  type="button"
+  (click)="toggleDataTable()"
+>
+  Danh sách hành trình
+</button>
+
+<img
+  #imagePopup
+  id="popup-image"
+  class="d-none"
+  alt="popup-image"
+  style="border-radius: 50%; width: 40px"
+/>

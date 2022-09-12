@@ -1,25 +1,20 @@
 import {
-  GeoJSON,
   Point,
   Feature,
-  FeatureCollection,
   LineString,
   GeoJsonProperties,
   Geometry,
 } from 'geojson';
-import mapboxgl, {
+import {
   CircleLayer,
   EventData,
   LineLayer,
   Map,
   MapLayerMouseEvent,
-  Popup,
   SymbolLayer,
 } from 'mapbox-gl';
 import { COLOR } from './geojson.constant';
-import { FindRidesResponse } from 'src/app/interface/ride';
 import 'datatables.net';
-import $ from 'jquery';
 import { MapboxComponent } from '../mapbox.component';
 
 function coordinatesGeocoder(query: string): any {
@@ -287,16 +282,45 @@ export function addRide(
 }
 
 export function removeRide(id: string, mapboxComponent: MapboxComponent): void {
-  mapboxComponent.map.removeLayer(`${id}-path-casing`);
-  mapboxComponent.map.removeLayer(`${id}-path`);
-  mapboxComponent.map.removeLayer(`${id}-start-point-origin`);
-  mapboxComponent.map.removeLayer(`${id}-start-point-label`);
-  mapboxComponent.map.removeLayer(`${id}-end-point-origin`);
-  mapboxComponent.map.removeLayer(`${id}-end-point-label`);
-  mapboxComponent.popup.remove();
-  mapboxComponent.map.removeSource(`${id}-path`);
-  mapboxComponent.map.removeSource(`${id}-start-point`);
-  mapboxComponent.map.removeSource(`${id}-end-point`);
+  if (mapboxComponent.map.getLayer(`${id}-path-casing`)) {
+    mapboxComponent.map.removeLayer(`${id}-path-casing`);
+  }
+  if (mapboxComponent.map.getLayer(`${id}-path-casing`)) {
+    mapboxComponent.map.removeLayer(`${id}-path-casing`);
+  }
+  if (mapboxComponent.map.getLayer(`${id}-path`)) {
+    mapboxComponent.map.removeLayer(`${id}-path`);
+  }
+  if (mapboxComponent.map.getLayer(`${id}-start-point-origin`)) {
+    mapboxComponent.map.removeLayer(`${id}-start-point-origin`);
+  }
+
+  if (mapboxComponent.map.getLayer(`${id}-start-point-label`)) {
+    mapboxComponent.map.removeLayer(`${id}-start-point-label`);
+  }
+
+  if (mapboxComponent.map.getLayer(`${id}-end-point-origin`)) {
+    mapboxComponent.map.removeLayer(`${id}-end-point-origin`);
+  }
+
+  if (mapboxComponent.map.getLayer(`${id}-end-point-label`)) {
+    mapboxComponent.map.removeLayer(`${id}-end-point-label`);
+  }
+
+  if (mapboxComponent.popup !== undefined) {
+    mapboxComponent.popup.remove();
+  }
+  if (mapboxComponent.map.getSource(`${id}-path`)) {
+    mapboxComponent.map.removeSource(`${id}-path`);
+  }
+
+  if (mapboxComponent.map.getSource(`${id}-start-point`)) {
+    mapboxComponent.map.removeSource(`${id}-start-point`);
+  }
+
+  if (mapboxComponent.map.getSource(`${id}-end-point`)) {
+    mapboxComponent.map.removeSource(`${id}-end-point`);
+  }
 }
 
 export function addDataSources(

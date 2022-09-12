@@ -20,6 +20,8 @@ import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { FormsModule } from '@angular/forms';
 import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
 import { IconModule } from '@coreui/icons-angular';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
+import { DateLocalPipe } from 'src/app/pipes/date-local.pipe';
 @NgModule({
   imports: [
     CardModule,
@@ -41,6 +43,8 @@ import { IconModule } from '@coreui/icons-angular';
     AvatarPipe,
     MetricPipe,
     DateInMilisecPipe,
+    UpdateStatusPipe,
+    DateLocalPipe,
   ],
 })
 export class MapboxModule {}

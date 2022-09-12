@@ -22,6 +22,8 @@ import { DefaultHeaderComponent } from './default-header/default-header.componen
 import { PipeModule } from 'src/app/pipes/pipe.module';
 import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
 import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
+import { ActivityComponent } from './activity/activity.component';
+import { ConfigComponent } from './config/config.component';
 
 @NgModule({
   imports: [
@@ -45,6 +47,8 @@ import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
     RideComponent,
     AdminComponent,
     DefaultHeaderComponent,
+    ActivityComponent,
+    ConfigComponent,
   ],
   bootstrap: [AdminComponent],
   providers: [UpdateStatusPipe, DateInMilisecPipe, UpperCasePipe],

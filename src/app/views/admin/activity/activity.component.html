@@ -1,0 +1,130 @@
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>Người dùng trực tuyến</c-card-header>
+      <c-card-body>
+        <table
+          [hover]="true"
+          [responsive]="true"
+          [striped]="true"
+          align="middle"
+          cTable
+          class="mb-0 border"
+        >
+          <thead cTableColor="light">
+            <tr>
+              <th class="text-center"></th>
+              <th>Người dùng</th>
+              <th>Thời gian</th>
+              <th class="text-center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let user of onlineUsers">
+              <tr>
+                <td class="text-center">
+                  <c-avatar size="md" src="{{ user.photoURL }}"></c-avatar>
+                </td>
+                <td>{{ user.fullName }}</td>
+                <td>{{ user.time }}</td>
+                <td>
+                  <button
+                    class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action fit-width"
+                  >
+                    Chi tiết
+                  </button>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>Người dùng mới tháng 9</c-card-header>
+      <c-card-body>
+        <table
+          [hover]="true"
+          [responsive]="true"
+          [striped]="true"
+          align="middle"
+          cTable
+          class="mb-0 border"
+        >
+          <thead cTableColor="light">
+            <tr>
+              <th class="text-center"></th>
+              <th>Người dùng</th>
+              <th>Ngày giao nhập</th>
+              <th class="text-center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let user of newUsers">
+              <tr>
+                <td class="text-center">
+                  <c-avatar size="md" src="{{ user.photoURL }}"></c-avatar>
+                </td>
+                <td>{{ user.fullName }}</td>
+                <td>{{ user.time }}</td>
+                <td>
+                  <button
+                    class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action fit-width"
+                  >
+                    Chi tiết
+                  </button>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>
+
+<c-row>
+  <c-col xs>
+    <c-card class="mb-4">
+      <c-card-header>Hành trình mới tháng 9</c-card-header>
+      <c-card-body>
+        <table
+          [hover]="true"
+          [responsive]="true"
+          [striped]="true"
+          align="middle"
+          cTable
+          class="mb-0 border"
+        >
+          <thead cTableColor="light">
+            <tr>
+              <th>Từ</th>
+              <th>Đến</th>
+              <th class="text-center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let ride of newRides">
+              <tr>
+                <td>{{ ride.startTitle }}</td>
+                <td>{{ ride.endTitle }}</td>
+                <td>
+                  <button
+                    class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text btn-action fit-width"
+                  >
+                    Chi tiết
+                  </button>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </c-card-body>
+    </c-card>
+  </c-col>
+</c-row>

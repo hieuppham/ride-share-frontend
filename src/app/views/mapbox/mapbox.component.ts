@@ -8,6 +8,8 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
+import { NavigationControl } from 'mapbox-gl';
+
 import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -37,38 +39,37 @@ import {
   UserDto,
   FindUsersResponse,
   UpdateUserRequest,
+  VehicleDto,
 } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
 import {
   FindRidesResponse,
   SaveRideRequest,
   FindRideDetailResponse,
+  FindRidesByBoundRequest,
 } from 'src/app/interface/ride';
 
 import {
   dateArrayToDateTimeLocal,
-  extractStartPoint,
-  extractEndPoint,
-  getPathLayer,
-  getStartPointLayer,
-  getStartSymbolLayer,
-  getEndPointLayer,
-  getEndSymbolLayer,
-  addPopupToLayer,
-  getPathCasingLayer,
-  addDataSources,
-  addRideLayer,
   addRide,
   removeRide,
 } from './util/geojson.function';
-import { Confirm } from 'src/app/interface/util';
+import {
+  Confirm,
+  ImageTarget,
+  ResponseBody,
+  RESPONSE_CODE,
+  VehicleImageTarget,
+} from 'src/app/interface/util';
 
 import {
   GEOCODER_OPT_SEARCH,
   MAPBOX_OPTIONS,
   COLOR,
+  MAP_STYLE_STREETS,
+  MAP_URL,
+  MAP_STYLE_DARK,
 } from './util/geojson.constant';
-import { initView } from './util/view.config';
 import { Error } from 'src/app/interface/util';
 import $ from 'jquery';
 import 'datatables.net';
@@ -79,23 +80,23 @@ import { DateInArrayPipe } from 'src/app/pipes/date-in-array.pipe';
 import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { ModalComponent } from '@coreui/angular';
-import { ENTITY_STATUS } from 'src/app/interface/entity-status';
 import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
 import { socketClient } from 'src/app/services/socket-client/socket.client';
 import {
   ConnectInfo,
   SocketMessage,
 } from 'src/app/interface/socket.interfaces';
+import { timeValidator } from 'src/app/shared/form-save-ride.directive';
+import { DateLocalPipe } from 'src/app/pipes/date-local.pipe';
 @Component({
   selector: 'app-mapbox',
   templateUrl: './mapbox.component.html',
   styleUrls: ['./mapbox.component.scss'],
 })
-export class MapboxComponent
-  implements AfterViewInit, OnDestroy, AfterContentInit
-{
+export class MapboxComponent implements AfterViewInit, OnDestroy {
   @ViewChild('imagePopup') imagePopup!: ElementRef<HTMLImageElement>;
   @ViewChild('rideInfoModal') rideInfoModal!: ModalComponent;
+
   loadAllDone: boolean = false;
   constructor(
     private rideService: RideService,
@@ -107,17 +108,19 @@ export class MapboxComponent
     private dateInArrayPipe: DateInArrayPipe,
     private dateInMilisec: DateInMilisecPipe,
     private avatarPipe: AvatarPipe,
-    private metricPipe: MetricPipe
+    private metricPipe: MetricPipe,
+    private dateTimeLocalPipe: DateLocalPipe
   ) {}
 
   ngAfterViewInit(): void {
-    this.loadMap();
+    this.loadAll()
+      .then((res) => {})
+      .catch((err) => {
+        console.error(err);
+      });
+  }
 
-    initView(this);
-    this.loadTopLeft();
-    this.loadBottomLeft();
-    this.findRidesByBound();
-    this.loadUser();
+  private setSocketClient(): void {
     if (socketClient.disconnected) {
       socketClient.connect();
       socketClient.on('new-connect', (data: ConnectInfo) => {
@@ -129,6 +132,7 @@ export class MapboxComponent
       socketClient.on('ride-added', (data: SocketMessage) => {
         this.rideService.findSingleRideById(data.id).subscribe({
           next: (res) => {
+            removeRide(res.id, this);
             addRide(res.id, this, res.path, res.photoURL);
             this.findRidesByBound();
           },
@@ -139,11 +143,23 @@ export class MapboxComponent
         this.findRidesByBound();
       });
     }
-    this.loadDataTable();
   }
 
-  ngAfterContentInit(): void {
-    this.loadAllDone = true;
+  private async loadAll(): Promise<boolean> {
+    try {
+      await this.loadMap();
+      this.initView();
+      this.setSocketClient();
+      await this.loadUser();
+      await this.findRidesByBound();
+      await this.loadAllRides();
+      this.loadDataTable();
+      await this.loadUserLocation();
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
   }
 
   ngOnDestroy(): void {
@@ -161,129 +177,134 @@ export class MapboxComponent
     dob: new FormControl('', [Validators.required]),
     gender: new FormControl('', [Validators.required]),
     phone: new FormControl('', [Validators.required]),
-    userIdPhotoURL: new FormControl('', [Validators.required]),
+    userIdPhotoURL: new FormControl(''),
     vehicles: new FormArray([]),
     email: new FormControl('', [Validators.required]),
   });
   user: UserDto | undefined;
-  userIdPhotoURL: string | undefined;
-  vehiclePhoto: TempVehicleImage[] = [];
 
   public get vehicles(): FormArray {
     return this.formUserInfo.get('vehicles') as FormArray;
   }
-  addVehicle(): void {
+
+  imageTarget: ImageTarget = {
+    userIdPhotoURL: undefined,
+    userIdPhotoImage: undefined,
+    vehilceImage: [],
+  };
+
+  addVehicle(vehicles?: VehicleDto[]): void {
+    const id: number = this.imageTarget.vehilceImage.length;
     this.vehicles.push(
       new FormGroup({
-        id: new FormControl(this.vehiclePhoto.length, Validators.required),
+        id: new FormControl(id, Validators.required),
         type: new FormControl('', [Validators.required]),
         name: new FormControl('', Validators.required),
         lpn: new FormControl('', Validators.required),
-        image: new FormControl('', Validators.required),
-        lpnImage: new FormControl('', Validators.required),
+        image: new FormControl(''),
+        lpnImage: new FormControl(''),
       })
     );
-    this.vehiclePhoto.push({
-      id: this.vehiclePhoto.length,
-      image: '',
-      lpnImage: '',
+    this.imageTarget.vehilceImage.push({
+      id: id,
+      image: undefined,
+      imageURL: undefined,
+      lpnImage: undefined,
+      lpnImageURL: undefined,
     });
-    this._tmpTarget.vehicleImages.push({ vehicleImage: null, lpnImage: null });
   }
   removeVehicle(index: number): void {
-    this.vehicles.removeAt(index);
-    this.vehiclePhoto.splice(index, 1);
-    this._tmpTarget.vehicleImages.splice(index, 1);
+    this.vehicles.controls.splice(index, 1);
+  }
+
+  removeAllVehicles(): void {
+    this.vehicles.controls = [];
   }
   // end user
-  private loadUser(): void {
-    this.userService.findUserById(localStorage.getItem('id')!).subscribe({
-      next: (res: UserDto) => {
-        this.user = res;
-        this.userIsAdmin = res.email == environment.adminEmail;
-        switch (res.status) {
-          case ENTITY_STATUS['UNKNOWN']: {
-            this.formUserInfo.patchValue({ id: res.id, email: res.email });
-            this.toggleConfirmModal('newUser');
-            break;
-          }
-          case ENTITY_STATUS['PENDING']: {
-            console.log(res.status);
-            break;
-          }
-          case ENTITY_STATUS['INACTIVE']: {
-            console.log(res.status);
-            break;
-          }
-          case ENTITY_STATUS['ACTIVE']: {
-            break;
-          }
-          default: {
-            console.log(res.status);
-            break;
-          }
-        }
-
-        this.formUserInfo.patchValue({
-          id: res.id,
-          fullName: res.fullName,
-          phone: res.phone,
-          gender: res.gender,
-          dob: this.dateInMilisec.transform(res.dob, 'YYYY-MM-DD'),
-          email: res.email,
-          userIdPhotoURL: res.userIdPhotoURL,
-        });
-        // res.vehicles.forEach((vehicle) => {
-        //   this.vehicles.push({
-        //     id: vehicle.id,
-        //     type: vehicle.type,
-        //     name: vehicle.name,
-        //     lpn: vehicle.lpn,
-        //     lpnImage: vehicle.lpnImage,
-        //     image: vehicle.image,
-        //   });
-        //   this.vehiclePhoto.push({
-        //     id: vehicle.id,
-        //     lpnImage: vehicle.lpn,
-        //     image: vehicle.image,
-        //   });
-        // });
-        this.userIdPhotoURL = res.userIdPhotoURL;
-        this.formSaveRide.patchValue({ uid: res.uid });
-      },
-    });
+  private async loadUser(): Promise<void> {
+    this.user = await this.userService
+      .findUserById(localStorage.getItem('id')!)
+      .toPromise();
+    this.userIsAdmin = this.user!.email == environment.adminEmail;
+    await this.loadFormUserInfo(this.user!);
+    this.formSaveRide.patchValue({ userId: this.user!.id });
   }
 
-  // private setFormUserInfoValue(user: UserDto, formUserInfo: FormGroup): void {
-  //   formUserInfo.patchValue({
-  //     id: user.id,
-  //     fullName: user.fullName,
-  //     phone: user.phone,
-  //     email: user.email,
-  //     userIdPhotoURL: user.userIdPhotoURL,
-  //     dob: user.dob,
-  //     gender: user.gender,
-  //   });
+  getDateNow(): Date {
+    return new Date();
+  }
 
-  //   user.vehicles.forEach((v) => {
-  //     this.vehicles.push({});
-  //   });
-  // }
+  private async loadFormUserInfo(user: UserDto): Promise<void> {
+    this.formUserInfo.patchValue({
+      id: user.id,
+      fullName: user.fullName,
+      phone: user.phone,
+      gender: user.gender,
+      dob: this.dateInMilisec.transform(user.dob, 'YYYY-MM-DD'),
+      email: user.email,
+      userIdPhotoURL: user.userIdPhotoURL,
+    });
+
+    this.imageTarget = {
+      userIdPhotoImage: undefined,
+      userIdPhotoURL: user.userIdPhotoURL,
+      vehilceImage: [],
+    };
+
+    user.vehicles.forEach((v) => {
+      this.vehicles.push(
+        new FormGroup({
+          id: new FormControl(v.id, Validators.required),
+          type: new FormControl(v.type, Validators.required),
+          name: new FormControl(v.name, Validators.required),
+          lpn: new FormControl(v.lpn, Validators.required),
+          image: new FormControl(v.image),
+          lpnImage: new FormControl(v.lpnImage),
+        })
+      );
+
+      this.imageTarget.vehilceImage.push({
+        id: v.id,
+        image: undefined,
+        imageURL: v.image,
+        lpnImage: undefined,
+        lpnImageURL: v.lpnImage,
+      });
+    });
+  }
 
   private dataTable: any = null;
 
-  private loadUserLocation(): void {
-    window.navigator.geolocation.getCurrentPosition(
-      (p: GeolocationPosition) => {
-        const location: LngLatLike = {
-          lng: p.coords.longitude,
-          lat: p.coords.latitude,
-        };
-        new Marker({ color: '#dd0a21' }).setLngLat(location).addTo(this.map);
-        this.map.flyTo({ center: location, zoom: 14 });
-      },
-      console.error
-    );
+  private async loadUserLocation(): Promise<void> {
+    try {
+      const navigator = window.navigator;
+      const locationPermission = await navigator.permissions.query({
+        name: 'geolocation',
+      });
+      this.setUserLocation(navigator, this.map);
+      locationPermission.addEventListener('change', (ev: Event) => {
+        this.setUserLocation(navigator, this.map);
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  private userLocationMarker: Marker | undefined;
+  private setUserLocation(navigator: Navigator, map: Map): void {
+    navigator.geolocation.getCurrentPosition((p: GeolocationPosition) => {
+      const location: LngLatLike = {
+        lng: p.coords.longitude,
+        lat: p.coords.latitude,
+      };
+      if (this.userLocationMarker) {
+        this.userLocationMarker.remove();
+      }
+      this.userLocationMarker = new Marker({ color: '#dd0a21' }).setLngLat(
+        location
+      );
+      this.userLocationMarker.addTo(map);
+      map.flyTo({ center: location, zoom: 14 });
+    });
   }
 
   public rideResponseDtoFeatureCollection: FeatureCollection = {
@@ -296,36 +317,12 @@ export class MapboxComponent
   map!: Map;
   photoURL: string = './assets/img/avatars/8.jpg';
 
-  ctrlTopCenter!: HTMLDivElement;
-  ctrlTopLeft!: HTMLDivElement;
-  ctrlBottomRight!: HTMLDivElement;
-  ctrlBottomLeft!: HTMLDivElement;
-  ctrlMidRight!: HTMLDivElement;
-
-  buttonAdminPage!: HTMLButtonElement;
-  divSearch!: HTMLDivElement;
-  divButtonApplyWrapper!: HTMLDivElement;
-  buttonApplyPoint!: HTMLButtonElement;
-  inputDistance!: HTMLInputElement;
-
-  // form share
-  formShareWrapper!: HTMLFormElement;
-  buttonToggleFormShare!: HTMLButtonElement;
-  formShareDivStart!: HTMLDivElement;
-  formShareDivEnd!: HTMLDivElement;
-  inputStartShare!: HTMLInputElement;
-  inputEndShare!: HTMLInputElement;
-  inputDistanceMeasureShare!: HTMLInputElement;
-
-  buttonShowMyRides!: HTMLButtonElement;
-  // end form share
-
   formSaveRide: FormGroup = new FormGroup({
     id: new FormControl(null),
     userId: new FormControl('', Validators.required),
-    route: new FormControl('', Validators.required),
-    startTime: new FormControl('', Validators.required),
-    endTime: new FormControl('', Validators.required),
+    route: new FormControl(null, [Validators.required]),
+    startTime: new FormControl('', [Validators.required, timeValidator()]),
+    endTime: new FormControl('', [Validators.required, timeValidator()]),
     vehicleId: new FormControl('', Validators.required),
     criterions: new FormControl(''),
     note: new FormControl(''),
@@ -333,57 +330,59 @@ export class MapboxComponent
 
   async onSubmitFormUserInfo(): Promise<void> {
     try {
-      if (this._tmpTarget.userIdImage) {
-        const _userIdPhotoURL: string = await this.storageService.upload(
-          this._tmpTarget.userIdImage!.files!.item(0)!,
+      await this.uploadImage();
+      this.formUserInfo.patchValue({
+        userIdPhotoURL: this.imageTarget.userIdPhotoURL,
+      });
+      await this.imageTarget.vehilceImage.forEach((v) => {
+        this.vehicles.controls.forEach((c) => {
+          if (c.get('id')!.value == v.id) {
+            c.patchValue({
+              image: v.imageURL,
+              lpnImage: v.lpnImageURL,
+            });
+          }
+        });
+      });
+
+      await this.userService
+        .updateUser(this.formUserInfo.value as UpdateUserRequest)
+        .toPromise();
+    } catch (error) {}
+  }
+
+  private async uploadImage(): Promise<void> {
+    try {
+      if (this.imageTarget.userIdPhotoImage) {
+        // upload userIdPhotoURL
+        this.imageTarget.userIdPhotoURL = await this.storageService.upload(
+          this.imageTarget.userIdPhotoImage.files!.item(0)!,
           this.user!.uid,
           'user'
         );
-        this.formUserInfo.patchValue({
-          userIdPhotoURL: _userIdPhotoURL,
-        });
       }
-      const _vLength: number = this.user!.vehicles.length;
-      for (let [i, v] of this._tmpTarget.vehicleImages.entries()) {
-        const vehicleImageURL: string = await this.storageService.upload(
-          v.vehicleImage?.files?.item(0)!,
-          this.user!.uid,
-          'vehicle',
-          _vLength + i
+      if (this.imageTarget.vehilceImage.length > 0) {
+        this.imageTarget.vehilceImage = await Promise.all(
+          this.imageTarget.vehilceImage.map(async (v) => {
+            v.imageURL = await this.storageService.upload(
+              v.image!.files!.item(0)!,
+              this.user!.uid,
+              'vehicle',
+              v.id
+            );
+
+            v.lpnImageURL = await this.storageService.upload(
+              v.lpnImage!.files!.item(0)!,
+              this.user!.uid,
+              'lpn',
+              v.id
+            );
+            return v;
+          })
         );
-        const lpnImageUrl: string = await this.storageService.upload(
-          v.lpnImage?.files?.item(0)!,
-          this.user!.uid,
-          'lpn',
-          _vLength + i
-        );
-        (
-          (this.formUserInfo.controls['vehicles'] as FormArray).controls[
-            _vLength + i
-          ] as FormGroup
-        ).patchValue({
-          image: vehicleImageURL,
-          lpnImage: lpnImageUrl,
-        });
       }
-
-      this.userService
-        .updateUser(this.formUserInfo.value as UpdateUserRequest)
-        .subscribe({
-          next: (res) => {
-            this.user = res;
-          },
-          error: (err) => console.error(err),
-        });
-    } catch (error: any) {
-      console.error(error);
-      let err: Error = {
-        code: '9999',
-        message: 'Đã có lỗi xảy ra :(',
-      };
-      console.log(err);
-
-      // this.showErrorModal(err);
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -398,14 +397,28 @@ export class MapboxComponent
         .map((c) => c.trim())),
     });
 
-    const request = this.formSaveRide.value as SaveRideRequest;
+    if (this.formSaveRide.valid) {
+      const request = this.formSaveRide.value as SaveRideRequest;
 
-    this.rideService.saveRide(request).subscribe({
-      next: (res) => {
-        // this.loadAllRides();
-      },
-    });
-    this.formSaveRide.reset();
+      this.rideService.saveRide(request).subscribe({
+        next: (res) => {
+          if (res.code == RESPONSE_CODE['ONE_RIDE_ACTIVE']) {
+            this.toggleErrorModal(res);
+          }
+        },
+      });
+      this.formSaveRide.patchValue({
+        id: null,
+        route: null,
+        startTime: null,
+        endTime: null,
+        vehicleId: null,
+        criterions: '',
+        note: null,
+      });
+    } else {
+      console.error(this.formSaveRide.errors);
+    }
     this.toggleFormSaveRide();
   }
 
@@ -415,8 +428,20 @@ export class MapboxComponent
         this.formSaveRide.patchValue({
           id: res.id,
           userId: res.userId,
-          startTime: this.dateToDateTimeLocal(res.startTime),
-          endTime: this.dateToDateTimeLocal(res.endTime),
+          route: res.route,
+          startTime: this.dateTimeLocalPipe.transform(
+            new Date(),
+            'now',
+            true,
+            res.startTime as any
+          ),
+          vehicleId: res.vehicle.id,
+          endTime: this.dateTimeLocalPipe.transform(
+            new Date(),
+            'now',
+            true,
+            res.endTime as any
+          ),
           criterions: res.criterions.join(', '),
           note: res.note,
         });
@@ -425,13 +450,13 @@ export class MapboxComponent
   }
 
   userIsAdmin: boolean = false;
-  private loadMap(): void {
+  private async loadMap(): Promise<void> {
     this.map = new Map(MAPBOX_OPTIONS);
-    this.map.on('load', (e: MapStyleDataEvent & EventData) => {
-      this.loadAllRides();
-      this.loadUserLocation();
-    });
+    setTimeout(() => {
+      this.map.resize();
+    }, 0);
 
+    this.loadAllDone = true;
     this.map.on(
       'moveend',
       (
@@ -442,84 +467,82 @@ export class MapboxComponent
       }
     );
   }
+
   private loadDataTable(): void {
-    $(() => {
-      this.dataTable = $('#table_id').DataTable({
-        autoWidth: true,
-        scrollCollapse: true,
-        info: false,
-        jQueryUI: true,
-        // scrollY: '',
-        pageLength: 5,
-        paging: false,
-        searching: true,
-        language: {
-          paginate: {
-            first: 'Đầu',
-            last: 'Cuối',
-            next: 'Kế',
-            previous: 'Trước',
-          },
-          zeroRecords: 'Không tìm được chuyến',
-          search: 'Tìm kiếm',
+    // $(() => {
+    this.dataTable = $('#table_id').DataTable({
+      autoWidth: true,
+      scrollCollapse: true,
+      info: false,
+      jQueryUI: true,
+      pageLength: 5,
+      paging: false,
+      searching: true,
+      language: {
+        paginate: {
+          first: 'Đầu',
+          last: 'Cuối',
+          next: 'Kế',
+          previous: 'Trước',
         },
-        columns: [
-          {
-            data: 'photoURL',
-            className: 'text-center',
-            render: (data, type, row, meta) => {
-              return this.avatarPipe.transform(data, 40);
-            },
-            orderable: false,
+        zeroRecords: 'Không tìm được chuyến',
+        search: 'Tìm kiếm',
+      },
+      columns: [
+        {
+          data: 'photoURL',
+          className: 'text-center',
+          render: (data, type, row, meta) => {
+            return this.avatarPipe.transform(data, 40);
           },
-          {
-            data: 'vehicle.type',
-            className: 'text-center',
-            render: (data, type, row, meta) => {
-              return this.vehiclePipe.transform(data);
-            },
-          },
-          {
-            data: 'path.properties.startPointTitle',
-            orderable: false,
-          },
-          {
-            data: 'path.properties.endPointTitle',
-            orderable: false,
-          },
-          {
-            data: 'startTime',
-            render: (data, type, row, meta) => {
-              return this.dateInArrayPipe.transform(data);
-            },
-          },
-          {
-            data: 'endTime',
-            render: (data, type, row, meta) => {
-              return this.dateInArrayPipe.transform(data);
-            },
-          },
-          {
-            data: 'distance',
-            render: (data, type, row, meta) => {
-              return this.metricPipe.transform(data);
-            },
-          },
-          { data: 'criterions', searchable: true, orderable: false },
-        ],
-        drawCallback: (settings: any) => {
-          this.changeLinesColor();
+          orderable: false,
         },
-      });
-
-      $('canvas.mapboxgl-canvas').addClass('w-100 h-100');
-
-      $(document).on('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key == 'x') {
-          this.toggleDataTable();
-        }
-      });
+        {
+          data: 'vehicle.type',
+          className: 'text-center',
+          render: (data, type, row, meta) => {
+            return this.vehiclePipe.transform(data);
+          },
+        },
+        {
+          data: 'path.properties.startPointTitle',
+          orderable: false,
+        },
+        {
+          data: 'path.properties.endPointTitle',
+          orderable: false,
+        },
+        {
+          data: 'startTime',
+          render: (data, type, row, meta) => {
+            return this.dateInArrayPipe.transform(data);
+          },
+        },
+        {
+          data: 'endTime',
+          render: (data, type, row, meta) => {
+            return this.dateInArrayPipe.transform(data);
+          },
+        },
+        {
+          data: 'distance',
+          render: (data, type, row, meta) => {
+            return this.metricPipe.transform(data);
+          },
+        },
+        { data: 'criterions', searchable: true, orderable: false },
+      ],
+      drawCallback: (settings: any) => {
+        this.changeLinesColor();
+      },
     });
+
+    $(document).on('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key == 'x') {
+        this.toggleDataTable();
+      }
+    });
+    // });
   }
 
   error: Error = {
@@ -527,7 +550,7 @@ export class MapboxComponent
     message: 'Lỗi xảy ra',
   };
   errorModalVisible: boolean = false;
-  toggleErrorModal(error?: Error): void {
+  toggleErrorModal(error?: ResponseBody): void {
     if (error) {
       this.error = error;
       this.errorModalVisible = true;
@@ -536,37 +559,40 @@ export class MapboxComponent
     }
   }
 
-  private findRidesByBound(): void {
-    this.rideService
+  private async findRidesByBound(): Promise<void> {
+    let res: FindRidesResponse[] | undefined = await this.rideService
       .findRidesByBound(
         this.map.getBounds().getSouthWest().toArray(),
         this.map.getBounds().getNorthEast().toArray()
       )
-      .subscribe({
-        next: (res) => {
-          this.updateDataTable(res);
-        },
-      });
+      .toPromise();
+    this.updateDataTable(res);
   }
 
   private updateDataTable(data: any): void {
-    this.dataTable?.clear();
-    this.dataTable.rows.add(data).draw();
+    if (this.dataTable) {
+      this.dataTable!.clear();
+      this.dataTable.rows.add(data).draw();
+    }
   }
 
-  private loadAllRides(): void {
-    this.rideService.findAllRides().subscribe({
-      next: (res) => {
-        res.forEach((ride) => {
-          addRide(ride.id, this, ride.path, ride.photoURL);
-        });
-      },
+  private async loadAllRides(): Promise<void> {
+    const res = await this.rideService.findAllRides().toPromise();
+    res!.forEach((ride) => {
+      addRide(ride.id, this, ride.path, ride.photoURL);
     });
   }
 
   popup: Popup = new Popup({
     closeButton: true,
   });
+
+  private initView(): void {
+    this.loadTopLeft();
+    this.loadBottomLeft();
+    this.loadTopRight();
+    this.loadBottomRight();
+  }
 
   private loadTopLeft(): void {
     this.map.addControl(new MapboxGeocoder(GEOCODER_OPT_SEARCH), 'top-left');
@@ -597,9 +623,13 @@ export class MapboxComponent
           language: 'vi',
           placeholderOrigin: 'Bắt đầu',
           placeholderDestination: 'Kết thúc',
-        }).on('route', (routes: Path) => {
-          this.onRouteSet(routes);
-        }),
+        })
+          .on('route', (routes: Path) => {
+            this.onRouteSet(routes);
+          })
+          .on('clear', () => {
+            this.formSaveRide.patchValue({ route: null });
+          }),
         'bottom-left'
       );
       $('div.mapboxgl-ctrl-directions.mapboxgl-ctrl').css('min-width', '240px');
@@ -630,9 +660,29 @@ export class MapboxComponent
     });
   }
 
+  private loadTopRight(): void {
+    $('#map > div.mapboxgl-control-container').append(
+      $('div.mapboxgl-ctrl-top-center')
+    );
+  }
+
+  private loadBottomRight(): void {
+    this.map.addControl(new NavigationControl(), 'bottom-right');
+    $(
+      '#map > div.mapboxgl-control-container > div.mapboxgl-ctrl-bottom-right > div.mapboxgl-ctrl.mapboxgl-ctrl-attrib'
+    ).remove();
+
+    $('div.mapboxgl-ctrl-bottom-right')
+      .prepend($('#btn-toggle-table'))
+      .addClass('d-flex');
+  }
   toggleFormSaveRide(display?: boolean): void {
     $(() => {
-      $('#form-ride-share').toggleClass('d-none');
+      if (display) {
+        $('#form-ride-share').removeClass('d-none');
+      } else {
+        $('#form-ride-share').toggleClass('d-none');
+      }
     });
   }
 
@@ -641,37 +691,32 @@ export class MapboxComponent
   }
 
   toggleDataTable(): void {
-    $('#map').toggleClass('h-100');
-    $('canvas.mapboxgl-canvas').toggleClass('h-100');
-    $('#table-container').toggleClass('d-none');
+    $('#map').toggleClass('vh-100').toggleClass('vh-60');
+    $('#table-container').toggleClass('d-none').toggleClass('vh-40');
+    this.map.resize();
   }
 
-  _tmpTarget: ITempTarget = {
-    userIdImage: null,
-    vehicleImages: [],
-  };
   private fileReader: FileReader = new FileReader();
   onSelectFile(event: Event, type: string, index?: number): void {
     const target: HTMLInputElement = event.target as HTMLInputElement;
     if (target.files && target.files.item(0)) {
       this.fileReader.readAsDataURL(target.files.item(0)!);
-
       this.fileReader.onload = (e) => {
-        const _url: string = e.target?.result as string;
+        const url: string = e.target?.result as string;
         switch (type) {
-          case 'userIdImage': {
-            this.userIdPhotoURL = _url;
-            this._tmpTarget.userIdImage = target;
+          case 'userIdPhotoImage': {
+            this.imageTarget.userIdPhotoURL = url;
+            this.imageTarget.userIdPhotoImage = target;
             break;
           }
-          case 'vehicleImage': {
-            this.vehiclePhoto[index!].image = _url;
-            this._tmpTarget.vehicleImages[index!].vehicleImage = target;
+          case 'image': {
+            this.imageTarget.vehilceImage[index!].imageURL = url;
+            this.imageTarget.vehilceImage[index!].image = target;
             break;
           }
           case 'lpnImage': {
-            this.vehiclePhoto[index!].lpnImage = _url;
-            this._tmpTarget.vehicleImages[index!].lpnImage = target;
+            this.imageTarget.vehilceImage[index!].lpnImageURL = url;
+            this.imageTarget.vehilceImage[index!].lpnImage = target;
             break;
           }
           default: {
@@ -737,15 +782,6 @@ export class MapboxComponent
 
   signOutApp(): void {
     this.authService.signOutApp();
-  }
-
-  dateToDateTimeLocal(date: any): string {
-    if (date) {
-      let _dateAny: any = date as any;
-      let _dateNums: number[] = _dateAny as number[];
-      return dateArrayToDateTimeLocal(_dateNums);
-    }
-    return '';
   }
 
   confirm: Confirm = {
@@ -882,6 +918,7 @@ export class MapboxComponent
   //listener
   private onRouteSet(path: Path): void {
     this.saveRoute = path.route.at(0);
+    this.formSaveRide.patchValue({ route: this.saveRoute });
   }
 
   filterVehicle: string = 'all';

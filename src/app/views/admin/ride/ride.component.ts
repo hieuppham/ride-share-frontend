@@ -8,6 +8,7 @@ import {
 import { RideService } from '../../../services/ride.service';
 import { UpdateStatusRequest } from 'src/app/interface/user';
 import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
+import { socketClient } from 'src/app/services/socket-client/socket.client';
 @Component({
   templateUrl: './ride.component.html',
   styleUrls: ['../admin.component.scss'],
