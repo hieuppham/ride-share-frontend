@@ -1,6 +1,4 @@
 import {
-  AfterContentInit,
-  AfterViewChecked,
   AfterViewInit,
   Component,
   ElementRef,
@@ -31,6 +29,7 @@ import {
   FindUsersResponse,
   UpdateUserRequest,
   VehicleDto,
+  UpdateStatusRequest,
 } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
 import {
@@ -39,16 +38,12 @@ import {
   FindRideDetailResponse,
 } from 'src/app/interface/ride';
 
-import {
-  addRide,
-  removeRide,
-} from './util/geojson.function';
+import { addRide, removeRide } from './util/geojson.function';
 import {
   Confirm,
   ImageTarget,
   ResponseBody,
   RESPONSE_CODE,
-  VehicleImageTarget,
 } from 'src/app/interface/util';
 
 import {
@@ -74,14 +69,21 @@ import {
 } from 'src/app/interface/socket.interfaces';
 import { timeValidator } from 'src/app/shared/form-save-ride.directive';
 import { DateLocalPipe } from 'src/app/pipes/date-local.pipe';
+import { ENTITY_STATUS } from '../../interface/entity-status';
+import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
 @Component({
   selector: 'app-mapbox',
   templateUrl: './mapbox.component.html',
   styleUrls: ['./mapbox.component.scss'],
 })
-export class MapboxComponent implements AfterViewInit, OnDestroy {
+export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
   @ViewChild('imagePopup') imagePopup!: ElementRef<HTMLImageElement>;
   @ViewChild('rideInfoModal') rideInfoModal!: ModalComponent;
+  @ViewChild('confirmModal') confirmModal!: ModalComponent;
+  @ViewChild('searchUserModal') searchUserModal!: ModalComponent;
+  @ViewChild('myRidesModal') myRidesModal!: ModalComponent;
+  @ViewChild('userInfoModal') userInfoModal!: ModalComponent;
+  @ViewChild('errorModal') errorModal!: ModalComponent;
 
   loadAllDone: boolean = false;
   constructor(
@@ -95,8 +97,15 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     private dateInMilisec: DateInMilisecPipe,
     private avatarPipe: AvatarPipe,
     private metricPipe: MetricPipe,
-    private dateTimeLocalPipe: DateLocalPipe
+    private dateTimeLocalPipe: DateLocalPipe,
+    private updateStatusPipe: UpdateStatusPipe
   ) {}
+
+  ngOnInit() {
+    if (!localStorage.getItem('id')) {
+      this.router.navigate(['/login']);
+    }
+  }
 
   ngAfterViewInit(): void {
     this.loadAll()
@@ -137,8 +146,10 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
       this.initView();
       this.setSocketClient();
       await this.loadUser();
-      await this.findRidesByBound();
-      await this.loadAllRides();
+      if (this.isUserActive()) {
+        await this.findRidesByBound();
+        await this.loadAllRides();
+      }
       this.loadDataTable();
       await this.loadUserLocation();
       return true;
@@ -203,17 +214,21 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     this.vehicles.controls.splice(index, 1);
   }
 
-  // removeAllVehicles(): void {
-  //   this.vehicles.controls = [];
-  // }
   // end user
-  private async loadUser(): Promise<void> {
+  private async loadUser(id?: string): Promise<void> {
     this.user = await this.userService
-      .findUserById(localStorage.getItem('id')!)
+      .findUserById(id ? id : localStorage.getItem('id')!)
       .toPromise();
     this.userIsAdmin = this.user!.email == environment.adminEmail;
+    if (this.user!.status == ENTITY_STATUS['UNKNOWN']) {
+      this.toggleConfirmModal('newUser');
+    }
     await this.loadFormUserInfo(this.user!);
     this.formSaveRide.patchValue({ userId: this.user!.id });
+  }
+
+  isUserActive(): boolean {
+    return this.user?.status == 'ACTIVE';
   }
 
   getDateNow(): Date {
@@ -307,8 +322,8 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     id: new FormControl(null),
     userId: new FormControl('', Validators.required),
     route: new FormControl(null, [Validators.required]),
-    startTime: new FormControl('', [Validators.required, timeValidator()]),
-    endTime: new FormControl('', [Validators.required, timeValidator()]),
+    startTime: new FormControl('', [Validators.required]),
+    endTime: new FormControl('', [Validators.required]),
     vehicleId: new FormControl('', Validators.required),
     criterions: new FormControl(''),
     note: new FormControl(''),
@@ -388,7 +403,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
 
       this.rideService.saveRide(request).subscribe({
         next: (res) => {
-          if (res.code == RESPONSE_CODE['ONE_RIDE_ACTIVE']) {
+          if (res.code !== RESPONSE_CODE['SUCCESS']) {
             this.toggleErrorModal(res);
           }
         },
@@ -403,7 +418,12 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
         note: null,
       });
     } else {
-      console.error(this.formSaveRide.errors);
+      const res: ResponseBody = {
+        code: RESPONSE_CODE['FORM_INVALID'],
+        message: 'Thiếu thông tin',
+        data: null,
+      };
+      this.toggleErrorModal(res);
     }
     this.toggleFormSaveRide();
   }
@@ -532,27 +552,28 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
   }
 
   error: Error = {
-    code: '9999',
+    code: RESPONSE_CODE['INTERNAL_SYSTEM_ERROR'],
     message: 'Lỗi xảy ra',
   };
-  errorModalVisible: boolean = false;
   toggleErrorModal(error?: ResponseBody): void {
     if (error) {
       this.error = error;
-      this.errorModalVisible = true;
+      this.errorModal.visible = true;
     } else {
-      this.errorModalVisible = !this.errorModalVisible;
+      this.errorModal.visible = !this.errorModal.visible;
     }
   }
 
   private async findRidesByBound(): Promise<void> {
-    let res: FindRidesResponse[] | undefined = await this.rideService
-      .findRidesByBound(
-        this.map.getBounds().getSouthWest().toArray(),
-        this.map.getBounds().getNorthEast().toArray()
-      )
-      .toPromise();
-    this.updateDataTable(res);
+    if (this.isUserActive()) {
+      let res: FindRidesResponse[] | undefined = await this.rideService
+        .findRidesByBound(
+          this.map.getBounds().getSouthWest().toArray(),
+          this.map.getBounds().getNorthEast().toArray()
+        )
+        .toPromise();
+      this.updateDataTable(res);
+    }
   }
 
   private updateDataTable(data: any): void {
@@ -726,16 +747,14 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
   }
 
   chosenSearchUser: FindUsersResponse | undefined;
-  searchUserModalVisible: boolean = false;
   toggleSearchUserModal(): void {
-    this.searchUserModalVisible = !this.searchUserModalVisible;
+    this.searchUserModal.visible = !this.searchUserModal.visible;
   }
 
   myRide: FindRideDetailResponse[] = [];
-  myRidesModalVisible: boolean = false;
   toggleMyRidesModal(): void {
     this.findRidesByUserId(this.user!.id);
-    this.myRidesModalVisible = !this.myRidesModalVisible;
+    this.myRidesModal.visible = !this.myRidesModal.visible;
   }
 
   private findRidesByUserId(id: string): void {
@@ -746,24 +765,28 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  updateRideStatus(id: string, status: string): void {
+    const body: UpdateStatusRequest = {
+      id: id,
+      status: this.updateStatusPipe.transform(status, 'statusValue'),
+      sendEmail: true,
+    };
+    this.rideService.updateRideStatus(body).subscribe({
+      next: (res) => {
+        if (res.code != RESPONSE_CODE['SUCCESS']) {
+          this.toggleErrorModal(res);
+          this.toggleMyRidesModal();
+        }
+      },
+    });
+  }
+
   isActiveRide(status: string) {
     return status == 'ACTIVE';
   }
 
-  userInfoModalVisible: boolean = false;
   toggleUserInfoModal(): void {
-    this.userInfoModalVisible = !this.userInfoModalVisible;
-  }
-
-  confirmSignOutModalVisible: boolean = false;
-  toggleConfirmSignOutModal(): void {
-    this.toggleUserInfoModal();
-    this.confirmSignOutModalVisible = !this.confirmSignOutModalVisible;
-  }
-
-  confirmSaveRideModalVisible: boolean = false;
-  toggleConfirmSaveRideModal(): void {
-    this.confirmSaveRideModalVisible = !this.confirmSaveRideModalVisible;
+    this.userInfoModal.visible = !this.userInfoModal.visible;
   }
 
   signOutApp(): void {
@@ -776,7 +799,6 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
     accept: '',
     action: '',
   };
-  confirmModalVisible: boolean = false;
   toggleConfirmModal(action?: string): void {
     switch (action) {
       case 'newUser': {
@@ -787,6 +809,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
           accept: 'Cập nhật',
           action: action,
         };
+        this.confirmModal.visible = true;
         break;
       }
       case 'signOutNotInUserInfo': {
@@ -796,7 +819,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
           accept: 'Đăng xuất',
           action: 'signOut',
         };
-        this.toggleConfirmModal('close');
+        this.confirmModal.visible = false;
         break;
       }
       case 'signOut': {
@@ -806,6 +829,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
           accept: 'Đăng xuất',
           action: action,
         };
+        this.confirmModal.visible = false;
         this.toggleUserInfoModal();
         break;
       }
@@ -816,16 +840,9 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
           accept: 'Lưu',
           action: action,
         };
+        this.confirmModal.visible = true;
         break;
       }
-      // case 'updateRide': {
-      //   this.confirm = {
-      //     title: 'Cập nhật thông tin chuyến đi',
-      //     dismiss: 'Hủy',
-      //     accept: 'Cập nhật',
-      //     action: action,
-      //   };
-      // }
       case 'updateRideStatus': {
         this.confirm = {
           title: 'Cập nhật trạng thái chuyến đi',
@@ -833,7 +850,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
           accept: 'Cập nhật',
           action: action,
         };
-
+        this.confirmModal.visible = true;
         break;
       }
       case 'updateUser': {
@@ -843,21 +860,22 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
           accept: 'Cập nhật',
           action: action,
         };
+        this.confirmModal.visible = true;
         this.toggleUserInfoModal();
         break;
       }
-      case 'contactUser': {
+      case 'close': {
+        this.confirmModal.visible = false;
         break;
       }
       default: {
+        this.confirmModal.visible = false;
         break;
       }
     }
-    this.confirmModalVisible = !this.confirmModalVisible;
   }
 
   rideDetailInfo!: FindRideDetailResponse;
-  rideInfoModalVisible: boolean = false;
   toggleRideInfoModal(id?: string): void {
     if (id) {
       this.rideService.findRideDetailById(id).subscribe({
@@ -904,11 +922,6 @@ export class MapboxComponent implements AfterViewInit, OnDestroy {
   private onRouteSet(path: Path): void {
     this.saveRoute = path.route.at(0);
     this.formSaveRide.patchValue({ route: this.saveRoute });
-  }
-
-  filterVehicle: string = 'all';
-  onSelectFilterVehicle(event: string): void {
-    console.log(event);
   }
 
   onAcceptConfirm(): void {

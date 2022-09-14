@@ -109,7 +109,11 @@
     </form>
     <button
       id="btn-toggle-share"
-      class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0"
+      [ngClass]="{
+        'mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl ms-0': true,
+        'bg-grey color-white': !isUserActive()
+      }"
+      [disabled]="!isUserActive()"
       (click)="toggleFormSaveRide()"
     >
       Chia sẻ hành trình
@@ -119,7 +123,11 @@
   <button
     (click)="toggleMyRidesModal()"
     id="btn-toggle-show-my-rides"
-    class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+    [ngClass]="{
+      'mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl': true,
+      'bg-grey color-white': !isUserActive()
+    }"
+    [disabled]="!isUserActive()"
   >
     Hành trình của tôi
   </button>
@@ -143,6 +151,7 @@
     title="Tìm người dùng theo SĐT, email và tên"
     aria-label="Tìm người dùng theo SĐT, email và tên"
     (keyup)="onSearchUser($event)"
+    [disabled]="!isUserActive()"
   />
   <div class="suggestions-wrapper">
     <ul class="suggestions">
@@ -203,12 +212,7 @@
 </div>
 
 <!-- search user modal -->
-<c-modal
-  #searchUserModal
-  alignment="center"
-  id="showSearchUserModal"
-  [visible]="searchUserModalVisible"
->
+<c-modal #searchUserModal alignment="center" id="showSearchUserModal">
   <c-modal-header>
     <h5 cModalTitle>Thông tin người dùng</h5>
     <button
@@ -287,13 +291,7 @@
 </div>
 
 <!-- my rides modal -->
-<c-modal
-  #myRidesModal
-  alignment="center"
-  id="myRidesModal"
-  [visible]="myRidesModalVisible"
-  scrollable
->
+<c-modal #myRidesModal alignment="center" id="myRidesModal" scrollable>
   <c-modal-header>
     <h5 cModalTitle>Danh sách hành trình</h5>
     <button
@@ -316,15 +314,12 @@
         </p>
         <p>
           <span class="hl hl-lightgrey">{{ ride.status | status }}</span>
-          <ng-container *ngIf="ride.criterions.length > 0">
-            <ng-container *ngFor="let c of ride.criterions">
-              <span class="hl hl-lightgrey">{{ c }}</span>
-            </ng-container>
-          </ng-container>
+          <span class="hl hl-lightgrey">{{ ride.vehicle.type | vehicle }}</span>
         </p>
         <div class="d-flex justify-content-between">
           <button
             class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit bg-red color-white px-3"
+            (click)="updateRideStatus(ride.id, ride.status)"
           >
             {{ ride.status | updateStatus }}
           </button>
@@ -346,13 +341,7 @@
 <!-- end my rides modal -->
 
 <!-- modal confirm  -->
-<c-modal
-  #cofirmModal
-  alignment="center"
-  id="cofirmModal"
-  [visible]="confirmModalVisible"
-  scrollable
->
+<c-modal #confirmModal alignment="center" id="cofirmModal" scrollable>
   <c-modal-header>
     <h5 cModalTitle>{{ confirm.title }}<b> </b></h5>
     <button
@@ -417,12 +406,7 @@
   </button>
 </div>
 
-<c-modal
-  #rideInfoModal
-  alignment="center"
-  id="rideInfoModal"
-  [visible]="rideInfoModalVisible"
->
+<c-modal #rideInfoModal alignment="center" id="rideInfoModal">
   <c-modal-header>
     <h5 cModalTitle>Thông tin hành trình</h5>
     <button
@@ -493,7 +477,7 @@
           >
         </span>
       </div>
-      <div class="d-flex flex-column align-items-start w-100">
+      <div class="d-flex flex-column align-items-center w-100">
         <span class="mb-2">
           <span class="hl hl-lightgrey">{{
             this.rideDetailInfo.user.fullName
@@ -516,13 +500,7 @@
 </c-modal>
 
 <!-- user info -->
-<c-modal
-  #userInfoModal
-  size="lg"
-  alignment="center"
-  id="userInfoModal"
-  [visible]="userInfoModalVisible"
->
+<c-modal #userInfoModal size="lg" alignment="center" id="userInfoModal">
   <c-modal-header>
     <h5 cModalTitle>Thông tin người dùng</h5>
     <button
@@ -656,7 +634,9 @@
                       placeholder="Tên phương tiện"
                     />
                     <!-- image -->
-                    <ng-container *ngIf="this.imageTarget.vehilceImage[i]">
+                    <ng-container
+                      *ngIf="this.imageTarget.vehilceImage[i].imageURL"
+                    >
                       <input
                         [src]="this.imageTarget.vehilceImage[i].imageURL"
                         height="240px"
@@ -683,7 +663,9 @@
                     />
 
                     <!-- license plate number image -->
-                    <ng-container *ngIf="this.imageTarget.vehilceImage[i]">
+                    <ng-container
+                      *ngIf="this.imageTarget.vehilceImage[i].lpnImageURL"
+                    >
                       <input
                         [src]="this.imageTarget.vehilceImage[i].lpnImageURL"
                         height="240px"
@@ -748,12 +730,7 @@
 </c-modal>
 <!-- end user info -->
 
-<c-modal
-  #errorModal
-  alignment="center"
-  id="errorAlertModal"
-  [visible]="errorModalVisible"
->
+<c-modal #errorModal alignment="center" id="errorAlertModal">
   <c-modal-header>
     <h5 cModalTitle><b>Lỗi :(</b></h5>
     <button
@@ -773,7 +750,11 @@
 <button
   id="btn-toggle-table"
   title="Ctrl + X"
-  class="mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl"
+  [ngClass]="{
+    'mapboxgl-ctrl-geocoder--input mapboxgl-ctrl-geocoder mapboxgl-ctrl': true,
+    'bg-grey color-white': !isUserActive()
+  }"
+  [disabled]="!isUserActive()"
   type="button"
   (click)="toggleDataTable()"
 >
@@ -785,5 +766,6 @@
   id="popup-image"
   class="d-none"
   alt="popup-image"
+  onerror="this.src='../../../assets/img/img.jpeg'"
   style="border-radius: 50%; width: 40px"
 />

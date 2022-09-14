@@ -13,9 +13,9 @@ import {
   MapLayerMouseEvent,
   SymbolLayer,
 } from 'mapbox-gl';
-import {COLOR} from './geojson.constant';
+import { COLOR } from './geojson.constant';
 import 'datatables.net';
-import {MapboxComponent} from '../mapbox.component';
+import { MapboxComponent } from '../mapbox.component';
 
 function coordinatesGeocoder(query: string): any {
   const matches = query.match(
@@ -258,12 +258,10 @@ export function addPopupToLayer(
       mapboxComponent.map.getCanvas().style.cursor = 'pointer';
       mapboxComponent.imagePopup.nativeElement.src = photoURL;
       mapboxComponent.imagePopup.nativeElement.className = 'block';
-      mapboxComponent.imagePopup.nativeElement.addEventListener(
-        'click',
-        (e: MouseEvent) => {
+      (mapboxComponent.imagePopup.nativeElement as HTMLImageElement).onclick =
+        () => {
           mapboxComponent.toggleRideInfoModal(id);
-        }
-      );
+        };
       mapboxComponent.popup
         .setLngLat(e.lngLat)
         .setDOMContent(mapboxComponent.imagePopup.nativeElement)
@@ -283,7 +281,9 @@ export function addRide(
 }
 
 export function removeRide(id: string, mapboxComponent: MapboxComponent): void {
-  mapboxComponent.dataTableIds = mapboxComponent.dataTableIds.filter(i => i !== id);
+  mapboxComponent.dataTableIds = mapboxComponent.dataTableIds.filter(
+    (i) => i !== id
+  );
   if (mapboxComponent.map.getLayer(`${id}-path-casing`)) {
     mapboxComponent.map.removeLayer(`${id}-path-casing`);
   }
@@ -330,7 +330,7 @@ export function addDataSources(
   map: Map,
   path: Feature<LineString, GeoJsonProperties>
 ): void {
-  map.addSource(`${id}-path`, {type: 'geojson', data: path});
+  map.addSource(`${id}-path`, { type: 'geojson', data: path });
   map.addSource(`${id}-start-point`, {
     type: 'geojson',
     data: extractStartPoint(path),

@@ -23,8 +23,8 @@ export class RideService {
     return this.http.post<ResponseBody>(`${this.API_URL_RIDE}/save`, request);
   }
 
-  updateRideStatus(request: UpdateStatusRequest): Observable<boolean> {
-    return this.http.post<boolean>(
+  updateRideStatus(request: UpdateStatusRequest): Observable<ResponseBody> {
+    return this.http.post<ResponseBody>(
       `${this.API_URL_RIDE}/update-status`,
       request
     );

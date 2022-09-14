@@ -8,7 +8,9 @@ import {Router} from "@angular/router";
 })
 export class LoginComponent implements OnInit{
   ngOnInit() {
-    this.router.navigate(["/map"]);
+    if (localStorage.getItem("id")) {
+      this.router.navigate(["/map"]);
+    }
   }
 
   constructor(private authService: AuthService, private router: Router) {}
