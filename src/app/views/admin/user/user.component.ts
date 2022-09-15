@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { AdminService } from '../admin.service';
 import { Confirm } from 'src/app/interface/util';
 import {
@@ -8,12 +8,14 @@ import {
 } from 'src/app/interface/user';
 import { UserService } from 'src/app/services/user.service';
 import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
+import { ModalComponent } from '@coreui/angular';
 
 @Component({
   templateUrl: 'user.component.html',
   styleUrls: ['../admin.component.scss'],
 })
 export class UserComponent implements OnInit {
+  @ViewChild('userInfoModal') userInfoModal!: ModalComponent;
   constructor(
     private adminService: AdminService,
     private userService: UserService,
@@ -23,7 +25,6 @@ export class UserComponent implements OnInit {
   users: FindUsersAdminResponse[] = [];
 
   userDetailInfo: UserDto | undefined;
-  userInfoModalVisible: boolean = false;
   toggleUserInfoModal(id?: string): void {
     if (id) {
       this.userService.findUserById(id).subscribe({
@@ -32,7 +33,7 @@ export class UserComponent implements OnInit {
         },
       });
     }
-    this.userInfoModalVisible = !this.userInfoModalVisible;
+    this.userInfoModal.visible = !this.userInfoModal.visible;
   }
 
   ngOnInit(): void {
@@ -58,8 +59,7 @@ export class UserComponent implements OnInit {
       sendEmail: this.sendEmail,
     };
     this.userService.updateUserStatus(body).subscribe({
-      next: (res) => {
-      },
+      next: (res) => {},
       error: (err) => {
         console.error(err);
       },

@@ -67,7 +67,6 @@ import {
   ConnectInfo,
   SocketMessage,
 } from 'src/app/interface/socket.interfaces';
-import { timeValidator } from 'src/app/shared/form-save-ride.directive';
 import { DateLocalPipe } from 'src/app/pipes/date-local.pipe';
 import { ENTITY_STATUS } from '../../interface/entity-status';
 import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
@@ -287,7 +286,12 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
         this.setUserLocation(navigator, this.map);
       });
     } catch (err) {
-      console.error(err);
+      const res: ResponseBody = {
+        code: RESPONSE_CODE['LOAD_USER_LOCATION_FAIL'],
+        message: 'Lỗi tải vị trí người dùng',
+        data: null,
+      };
+      this.toggleErrorModal(res);
     }
   }
   private userLocationMarker: Marker | undefined;
@@ -307,11 +311,6 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
       map.flyTo({ center: location, zoom: 14 });
     });
   }
-
-  // public rideResponseDtoFeatureCollection: FeatureCollection = {
-  //   type: 'FeatureCollection',
-  //   features: [],
-  // };
 
   saveRoute: Route | undefined;
 
@@ -383,7 +382,12 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
         );
       }
     } catch (err) {
-      console.error(err);
+      const res: ResponseBody = {
+        code: RESPONSE_CODE['UPLOAD_IMAGE_FAIL'],
+        message: 'Lỗi tải lên ảnh, vui lòng thử lại',
+        data: null,
+      };
+      this.toggleErrorModal(res);
     }
   }
 
@@ -405,17 +409,21 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
         next: (res) => {
           if (res.code !== RESPONSE_CODE['SUCCESS']) {
             this.toggleErrorModal(res);
+            this.formSaveRide.patchValue({
+              criterions: this.formSaveRide.value['criterions'].join(', '),
+            });
+          } else {
+            this.formSaveRide.patchValue({
+              id: null,
+              route: null,
+              startTime: null,
+              endTime: null,
+              vehicleId: null,
+              criterions: '',
+              note: null,
+            });
           }
         },
-      });
-      this.formSaveRide.patchValue({
-        id: null,
-        route: null,
-        startTime: null,
-        endTime: null,
-        vehicleId: null,
-        criterions: '',
-        note: null,
       });
     } else {
       const res: ResponseBody = {
@@ -423,6 +431,9 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
         message: 'Thiếu thông tin',
         data: null,
       };
+      this.formSaveRide.patchValue({
+        criterions: this.formSaveRide.value['criterions'].join(', '),
+      });
       this.toggleErrorModal(res);
     }
     this.toggleFormSaveRide();
@@ -451,6 +462,8 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
           criterions: res.criterions.join(', '),
           note: res.note,
         });
+
+        this.saveRoute = res.route;
       },
     });
   }
@@ -562,6 +575,17 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
     } else {
       this.errorModal.visible = !this.errorModal.visible;
     }
+    if (this.errorModal.visible) {
+      this.closeAllModal();
+    }
+  }
+
+  private closeAllModal(): void {
+    this.toggleConfirmModal('NO_ACTION', false);
+    this.toggleMyRidesModal(false);
+    this.toggleUserInfoModal(false);
+    this.toggleSearchUserModal(false);
+    this.toggleRideInfoModal('NO_ID', false);
   }
 
   private async findRidesByBound(): Promise<void> {
@@ -747,14 +771,22 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
   }
 
   chosenSearchUser: FindUsersResponse | undefined;
-  toggleSearchUserModal(): void {
-    this.searchUserModal.visible = !this.searchUserModal.visible;
+  toggleSearchUserModal(visible?: boolean): void {
+    if (visible == false) {
+      this.searchUserModal.visible = false;
+    } else {
+      this.searchUserModal.visible = !this.searchUserModal.visible;
+    }
   }
 
   myRide: FindRideDetailResponse[] = [];
-  toggleMyRidesModal(): void {
-    this.findRidesByUserId(this.user!.id);
-    this.myRidesModal.visible = !this.myRidesModal.visible;
+  toggleMyRidesModal(visible?: boolean): void {
+    if (visible == false) {
+      this.myRidesModal.visible = false;
+    } else {
+      this.findRidesByUserId(this.user!.id);
+      this.myRidesModal.visible = !this.myRidesModal.visible;
+    }
   }
 
   private findRidesByUserId(id: string): void {
@@ -775,7 +807,6 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
       next: (res) => {
         if (res.code != RESPONSE_CODE['SUCCESS']) {
           this.toggleErrorModal(res);
-          this.toggleMyRidesModal();
         }
       },
     });
@@ -785,8 +816,12 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
     return status == 'ACTIVE';
   }
 
-  toggleUserInfoModal(): void {
-    this.userInfoModal.visible = !this.userInfoModal.visible;
+  toggleUserInfoModal(visible?: boolean): void {
+    if (visible == false) {
+      this.userInfoModal.visible = false;
+    } else {
+      this.userInfoModal.visible = !this.userInfoModal.visible;
+    }
   }
 
   signOutApp(): void {
@@ -799,92 +834,100 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
     accept: '',
     action: '',
   };
-  toggleConfirmModal(action?: string): void {
-    switch (action) {
-      case 'newUser': {
-        this.confirm = {
-          title:
-            'Bạn là người dùng mới, hãy cập nhật thông tin để tiếp tục sử dụng.',
-          dismiss: 'Đăng xuất',
-          accept: 'Cập nhật',
-          action: action,
-        };
-        this.confirmModal.visible = true;
-        break;
-      }
-      case 'signOutNotInUserInfo': {
-        this.confirm = {
-          title: 'Đăng xuất khỏi hệ thống',
-          dismiss: 'Hủy',
-          accept: 'Đăng xuất',
-          action: 'signOut',
-        };
-        this.confirmModal.visible = false;
-        break;
-      }
-      case 'signOut': {
-        this.confirm = {
-          title: 'Đăng xuất khỏi hệ thống',
-          dismiss: 'Hủy',
-          accept: 'Đăng xuất',
-          action: action,
-        };
-        this.confirmModal.visible = false;
-        this.toggleUserInfoModal();
-        break;
-      }
-      case 'saveRide': {
-        this.confirm = {
-          title: 'Lưu thông tin hành trình',
-          dismiss: 'Hủy',
-          accept: 'Lưu',
-          action: action,
-        };
-        this.confirmModal.visible = true;
-        break;
-      }
-      case 'updateRideStatus': {
-        this.confirm = {
-          title: 'Cập nhật trạng thái chuyến đi',
-          dismiss: 'Hủy',
-          accept: 'Cập nhật',
-          action: action,
-        };
-        this.confirmModal.visible = true;
-        break;
-      }
-      case 'updateUser': {
-        this.confirm = {
-          title: 'Cập nhật thông tin tài khoản',
-          dismiss: 'Hủy',
-          accept: 'Cập nhật',
-          action: action,
-        };
-        this.confirmModal.visible = true;
-        this.toggleUserInfoModal();
-        break;
-      }
-      case 'close': {
-        this.confirmModal.visible = false;
-        break;
-      }
-      default: {
-        this.confirmModal.visible = false;
-        break;
+  toggleConfirmModal(action?: string, visible?: boolean): void {
+    if (visible == false) {
+      this.confirmModal.visible = false;
+    } else {
+      switch (action) {
+        case 'newUser': {
+          this.confirm = {
+            title:
+              'Bạn là người dùng mới, hãy cập nhật thông tin để tiếp tục sử dụng.',
+            dismiss: 'Đăng xuất',
+            accept: 'Cập nhật',
+            action: action,
+          };
+          this.confirmModal.visible = true;
+          break;
+        }
+        case 'signOutNotInUserInfo': {
+          this.confirm = {
+            title: 'Đăng xuất khỏi hệ thống',
+            dismiss: 'Hủy',
+            accept: 'Đăng xuất',
+            action: 'signOut',
+          };
+          this.confirmModal.visible = false;
+          break;
+        }
+        case 'signOut': {
+          this.confirm = {
+            title: 'Đăng xuất khỏi hệ thống',
+            dismiss: 'Hủy',
+            accept: 'Đăng xuất',
+            action: action,
+          };
+          this.confirmModal.visible = false;
+          this.toggleUserInfoModal();
+          break;
+        }
+        case 'saveRide': {
+          this.confirm = {
+            title: 'Lưu thông tin hành trình',
+            dismiss: 'Hủy',
+            accept: 'Lưu',
+            action: action,
+          };
+          this.confirmModal.visible = true;
+          break;
+        }
+        case 'updateRideStatus': {
+          this.confirm = {
+            title: 'Cập nhật trạng thái chuyến đi',
+            dismiss: 'Hủy',
+            accept: 'Cập nhật',
+            action: action,
+          };
+          this.confirmModal.visible = true;
+          break;
+        }
+        case 'updateUser': {
+          this.confirm = {
+            title: 'Cập nhật thông tin tài khoản',
+            dismiss: 'Hủy',
+            accept: 'Cập nhật',
+            action: action,
+          };
+          this.confirmModal.visible = true;
+          this.toggleUserInfoModal();
+          break;
+        }
+        case 'close': {
+          this.confirmModal.visible = false;
+          break;
+        }
+        default: {
+          this.confirmModal.visible = false;
+          break;
+        }
       }
     }
   }
 
   rideDetailInfo!: FindRideDetailResponse;
-  toggleRideInfoModal(id?: string): void {
-    if (id) {
-      this.rideService.findRideDetailById(id).subscribe({
-        next: (res) => {
-          this.rideDetailInfo = res;
-        },
-      });
+  toggleRideInfoModal(id?: string, visible?: boolean): void {
+    if (visible == false) {
+      this.rideInfoModal.visible = false;
+    } else {
+      if (id) {
+        this.rideService.findRideDetailById(id).subscribe({
+          next: (res) => {
+            this.rideDetailInfo = res;
+          },
+        });
+      }
+      this.rideInfoModal.visible = !this.rideInfoModal.visible;
     }
-    this.rideInfoModal.visible = !this.rideInfoModal.visible;
   }
 
   // helper

@@ -67,8 +67,8 @@
   alignment="center"
   size="lg"
   id="user-info-modal"
-  [visible]="userInfoModalVisible"
-  *ngIf="userDetailInfo"
+  *ngIf="userDetailInfo != undefined"
+  [visible]="userInfoModal.visible"
   scrollable
 >
   <c-modal-header>
