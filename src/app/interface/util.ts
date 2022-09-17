@@ -47,3 +47,8 @@ export const RESPONSE_CODE: ResponseCode = {
   UPLOAD_IMAGE_FAIL: '9991',
   LOAD_USER_LOCATION_FAIL: '5551',
 };
+
+export interface DataTableState {
+  id: string;
+  state: string;
+}

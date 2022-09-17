@@ -1,5 +1,14 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ENTITY_STATUS } from '../interface/entity-status';
+import {
+  ACTIVE,
+  DISABLE,
+  ENTITY_STATUS,
+  EXPIRED,
+  INACTIVE,
+  PENDING,
+  PREPARE,
+  UNKNOWN,
+} from '../interface/entity-status';
 
 @Pipe({
   name: 'updateStatus',
@@ -25,7 +34,7 @@ export class UpdateStatusPipe implements PipeTransform {
           result = 'INACTIVE';
           break;
         }
-        case ENTITY_STATUS['PENDING']: {
+        case PENDING: {
           result = 'ACTIVE';
           break;
         }
@@ -36,24 +45,32 @@ export class UpdateStatusPipe implements PipeTransform {
       }
     } else {
       switch (value) {
-        case 'INACTIVE': {
+        case INACTIVE: {
           result = 'Kích hoạt';
           break;
         }
-        case 'ACTIVE': {
-          result = 'Ngừng kích hoạt';
+        case PREPARE: {
+          result = 'Đang chuẩn bị';
           break;
         }
-        case 'UNKNOWN': {
-          result = 'Không phê duyệt';
+        case ACTIVE: {
+          result = 'Ngừng hoạt động';
           break;
         }
-        case ENTITY_STATUS['PENDING']: {
-          result = 'Phê duyệt';
+        case UNKNOWN: {
+          result = 'Chưa cập nhật thông tin';
           break;
         }
-        case 'EXPIRED': {
-          result = 'Kích hoạt';
+        case PENDING: {
+          result = 'Chờ phê duyệt';
+          break;
+        }
+        case EXPIRED: {
+          result = 'Đã kêt thúc';
+          break;
+        }
+        case DISABLE: {
+          result = 'Đã vô hiệu hóa';
           break;
         }
         default: {

@@ -251,26 +251,6 @@
       </div>
     </ng-container>
   </c-modal-body>
-  <!-- <c-modal-footer>
-    <div class="modal-footer">
-      <button
-        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input gray-background-white-text"
-        cButton
-        type="button"
-        (click)="toggleSearchUserModal()"
-      >
-        Báo cáo
-      </button>
-      <button
-        class="mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input green-background-white-text"
-        cButton
-        type="button"
-        (click)="toggleSearchUserModal()"
-      >
-        Liên hệ
-      </button>
-    </div>
-  </c-modal-footer> -->
 </c-modal>
 <!-- end search user modal -->
 
@@ -320,10 +300,26 @@
           <button
             [ngClass]="{
               'mapboxgl-ctrl-geocoder mapboxgl-ctrl mapboxgl-ctrl-geocoder--input w-fit px-3 color-white': true,
-              'bg-red': ride.status != 'PENDING',
-              'bg-grey': ride.status == 'PENDING'
+              'bg-red':
+                ride.status != 'PENDING' &&
+                ride.status != 'DISABLE' &&
+                ride.status != 'EXPIRED' &&
+                ride.status != 'UNKNOWN' &&
+                ride.status != 'PREPARE',
+              'bg-grey':
+                ride.status == 'PENDING' ||
+                ride.status == 'DISABLE' ||
+                ride.status == 'EXPIRED' ||
+                ride.status == 'UNKNOWN' ||
+                ride.status == 'PREPARE'
             }"
-            [disabled]="ride.status == 'PENDING'"
+            [disabled]="
+              ride.status == 'PENDING' ||
+              ride.status == 'DISABLE' ||
+              ride.status == 'EXPIRED' ||
+              ride.status == 'UNKNOWN' ||
+              ride.status == 'PREPARE'
+            "
             (click)="updateRideStatus(ride.id, ride.status)"
           >
             {{ ride.status | updateStatus }}
@@ -383,21 +379,37 @@
 <!-- end modal confirm -->
 
 <div class="mapboxgl-ctrl-top-center">
-  <button
-    id="btn-toggle-profile"
-    (click)="toggleUserInfoModal()"
-    cButton
-    class="py-0 nav-link btn"
-    ng-reflect-caret="false"
-  >
-    <ng-container *ngIf="this.user">
+  <div class="d-flex flex-column">
+    <button
+      id="btn-toggle-profile"
+      (click)="toggleUserInfoModal()"
+      cButton
+      class="py-0 nav-link btn"
+      ng-reflect-caret="false"
+    >
+      <ng-container *ngIf="this.user">
+        <img
+          class="avatar-img"
+          [src]="this.user!.photoURL"
+          alt=""
+          changeSrcOnError
+      /></ng-container>
+    </button>
+    <!-- <button
+      id="btn-toggle-help"
+      (click)="toggleUserInfoModal()"
+      cButton
+      class="py-0 nav-link btn"
+      ng-reflect-caret="false"
+    >
       <img
         class="avatar-img"
-        [src]="this.user!.photoURL"
+        src="../../../assets/img/info-black.png"
         alt=""
         changeSrcOnError
-    /></ng-container>
-  </button>
+      />
+    </button> -->
+  </div>
 
   <button
     *ngIf="userIsAdmin"

@@ -13,9 +13,22 @@ import {
   MapLayerMouseEvent,
   SymbolLayer,
 } from 'mapbox-gl';
-import { COLOR } from './geojson.constant';
+import {
+  COLOR_BLUE,
+  COLOR_BLUE_DARK,
+  COLOR_GREEN,
+  COLOR_GREEN_DARK,
+  COLOR_GREY,
+  COLOR_GREY_DARK,
+} from './geojson.constant';
 import 'datatables.net';
 import { MapboxComponent } from '../mapbox.component';
+import { ACTIVE, EXPIRED, PREPARE } from 'src/app/interface/entity-status';
+import {
+  RIDE_ACTIVATED,
+  RIDE_EXPIRED,
+  RIDE_PREPARED,
+} from 'src/app/services/socket-client/socket-event.constant';
 
 function coordinatesGeocoder(query: string): any {
   const matches = query.match(
@@ -77,6 +90,50 @@ function toFeature(geometry: Geometry): Feature<Geometry, GeoJsonProperties> {
 
 function twoDigit(num: number): string {
   return num < 10 ? '0' + num : num + '';
+}
+
+export function getColorByStatus(status: string, type: string): string {
+  let color: string;
+  if (type == 'path') {
+    switch (status) {
+      case PREPARE: {
+        color = COLOR_BLUE;
+        break;
+      }
+      case ACTIVE: {
+        color = COLOR_GREEN;
+        break;
+      }
+      case EXPIRED: {
+        color = COLOR_GREY;
+        break;
+      }
+      default: {
+        color = COLOR_BLUE;
+        break;
+      }
+    }
+  } else {
+    switch (status) {
+      case PREPARE: {
+        color = COLOR_BLUE_DARK;
+        break;
+      }
+      case ACTIVE: {
+        color = COLOR_GREEN_DARK;
+        break;
+      }
+      case EXPIRED: {
+        color = COLOR_GREY_DARK;
+        break;
+      }
+      default: {
+        color = COLOR_BLUE_DARK;
+        break;
+      }
+    }
+  }
+  return color;
 }
 
 function dateArrayToString(date: number[]): string {
@@ -147,7 +204,26 @@ export function extractEndPoint(
   return point;
 }
 
-export function getPathLayer(id: string): LineLayer {
+export function getPathLayer(id: string, status: string): LineLayer {
+  let lineColor: string;
+  switch (status) {
+    case PREPARE: {
+      lineColor = COLOR_BLUE;
+      break;
+    }
+    case ACTIVE: {
+      lineColor = COLOR_GREEN;
+      break;
+    }
+    case EXPIRED: {
+      lineColor = COLOR_GREY;
+      break;
+    }
+    default: {
+      lineColor = COLOR_GREEN;
+      break;
+    }
+  }
   return {
     id: `${id}-path`,
     type: 'line',
@@ -160,10 +236,10 @@ export function getPathLayer(id: string): LineLayer {
       'line-color': {
         property: 'congestion',
         type: 'categorical',
-        default: COLOR['blue'],
+        default: lineColor,
         stops: [
-          ['unknown', COLOR['blue']],
-          ['low', COLOR['blue']],
+          ['unknown', lineColor],
+          ['low', lineColor],
           ['moderate', '#f09a46'],
           ['heavy', '#e34341'],
           ['severe', '#8b2342'],
@@ -174,7 +250,26 @@ export function getPathLayer(id: string): LineLayer {
   } as LineLayer;
 }
 
-export function getPathCasingLayer(id: string) {
+export function getPathCasingLayer(id: string, status: string) {
+  let caseColor: string;
+  switch (status) {
+    case PREPARE: {
+      caseColor = COLOR_BLUE_DARK;
+      break;
+    }
+    case ACTIVE: {
+      caseColor = COLOR_GREEN_DARK;
+      break;
+    }
+    case EXPIRED: {
+      caseColor = COLOR_GREY_DARK;
+      break;
+    }
+    default: {
+      caseColor = COLOR_GREEN_DARK;
+      break;
+    }
+  }
   return {
     id: `${id}-path-casing`,
     type: 'line',
@@ -184,7 +279,7 @@ export function getPathCasingLayer(id: string) {
       'line-join': 'round',
     },
     paint: {
-      'line-color': COLOR['blue-dark'],
+      'line-color': caseColor,
       'line-width': 12,
     },
   } as LineLayer;
@@ -274,15 +369,16 @@ export function addRide(
   id: string,
   mapboxComponent: MapboxComponent,
   path: Feature<LineString, GeoJsonProperties>,
-  photoURL: string
+  photoURL: string,
+  status: string
 ): void {
   addDataSources(id, mapboxComponent.map, path);
-  addRideLayer(id, mapboxComponent, photoURL);
+  addRideLayer(id, mapboxComponent, photoURL, status);
 }
 
 export function removeRide(id: string, mapboxComponent: MapboxComponent): void {
-  mapboxComponent.dataTableIds = mapboxComponent.dataTableIds.filter(
-    (i) => i !== id
+  mapboxComponent.dataTableState = mapboxComponent.dataTableState.filter(
+    (row) => row.id !== id
   );
   if (mapboxComponent.map.getLayer(`${id}-path-casing`)) {
     mapboxComponent.map.removeLayer(`${id}-path-casing`);
@@ -344,15 +440,52 @@ export function addDataSources(
 export function addRideLayer(
   id: string,
   mapboxComponent: MapboxComponent,
-  photoURL: string
+  photoURL: string,
+  status: string
 ): void {
-  mapboxComponent.map.addLayer(getPathCasingLayer(id));
-  mapboxComponent.map.addLayer(getPathLayer(id));
+  mapboxComponent.map.addLayer(getPathCasingLayer(id, status));
+  mapboxComponent.map.addLayer(getPathLayer(id, status));
   mapboxComponent.map.addLayer(getStartPointLayer(id));
   mapboxComponent.map.addLayer(getStartSymbolLayer(id));
   mapboxComponent.map.addLayer(getEndPointLayer(id));
   mapboxComponent.map.addLayer(getEndSymbolLayer(id));
   addPopupToLayer(id, mapboxComponent, photoURL);
+}
+
+export function changePathColor(id: string, event: string, map: Map): void {
+  let pathColor: string;
+  let caseColor: string;
+  const pathLayerId: string = `${id}-path`;
+  const caseLayerId: string = `${id}-path-casing`;
+  const lineColor: string = 'line-color';
+  switch (event) {
+    case RIDE_PREPARED: {
+      pathColor = COLOR_BLUE;
+      caseColor = COLOR_BLUE_DARK;
+      break;
+    }
+    case RIDE_ACTIVATED: {
+      pathColor = COLOR_GREEN;
+      caseColor = COLOR_GREEN_DARK;
+      break;
+    }
+    case RIDE_EXPIRED: {
+      pathColor = COLOR_GREY;
+      caseColor = COLOR_GREY_DARK;
+      break;
+    }
+    default: {
+      pathColor = COLOR_GREY;
+      caseColor = COLOR_GREY_DARK;
+      break;
+    }
+  }
+  map.setPaintProperty(pathLayerId, lineColor, pathColor);
+  map.setPaintProperty(caseLayerId, lineColor, caseColor);
+}
+
+export function isRidePrepared(id: string, map: Map): boolean {
+  return map.getLayer(`${id}-path`) != undefined;
 }
 
 export {

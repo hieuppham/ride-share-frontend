@@ -38,9 +38,10 @@ import {
   FindRideDetailResponse,
 } from 'src/app/interface/ride';
 
-import { addRide, removeRide } from './util/geojson.function';
+import { addRide, getColorByStatus } from './util/geojson.function';
 import {
   Confirm,
+  DataTableState,
   ImageTarget,
   ResponseBody,
   RESPONSE_CODE,
@@ -49,7 +50,10 @@ import {
 import {
   GEOCODER_OPT_SEARCH,
   MAPBOX_OPTIONS,
-  COLOR,
+  COLOR_PINK,
+  COLOR_PINK_DARK,
+  COLOR_BLUE,
+  COLOR_BLUE_DARK,
 } from './util/geojson.constant';
 import { Error } from 'src/app/interface/util';
 import $ from 'jquery';
@@ -62,14 +66,15 @@ import { AvatarPipe } from 'src/app/pipes/avatar.pipe';
 import { MetricPipe } from 'src/app/pipes/metric.pipe';
 import { ModalComponent } from '@coreui/angular';
 import { DateInMilisecPipe } from 'src/app/pipes/date-in-milisec.pipe';
-import { socketClient } from 'src/app/services/socket-client/socket.client';
-import {
-  ConnectInfo,
-  SocketMessage,
-} from 'src/app/interface/socket.interfaces';
+
 import { DateLocalPipe } from 'src/app/pipes/date-local.pipe';
 import { ENTITY_STATUS } from '../../interface/entity-status';
 import { UpdateStatusPipe } from 'src/app/pipes/update-status.pipe';
+
+import {
+  setupSocketClient,
+  socketClient,
+} from 'src/app/services/socket-client/socket.client';
 @Component({
   selector: 'app-mapbox',
   templateUrl: './mapbox.component.html',
@@ -86,7 +91,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
 
   loadAllDone: boolean = false;
   constructor(
-    private rideService: RideService,
+    public rideService: RideService,
     private userService: UserService,
     private router: Router,
     private authService: AuthService,
@@ -114,36 +119,10 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
       });
   }
 
-  private setSocketClient(): void {
-    if (socketClient.disconnected) {
-      socketClient.connect();
-      socketClient.on('new-connect', (data: ConnectInfo) => {
-        this.numberOfOnlineUser = data.numberOfConnection;
-      });
-      socketClient.on('new-disconnect', (data: ConnectInfo) => {
-        this.numberOfOnlineUser = data.numberOfConnection;
-      });
-      socketClient.on('ride-added', (data: SocketMessage) => {
-        this.rideService.findSingleRideById(data.id).subscribe({
-          next: (res) => {
-            removeRide(res.id, this);
-            addRide(res.id, this, res.path, res.photoURL);
-            this.findRidesByBound();
-          },
-        });
-      });
-      socketClient.on('ride-removed', (data: SocketMessage) => {
-        removeRide(data.id, this);
-        this.findRidesByBound();
-      });
-    }
-  }
-
   private async loadAll(): Promise<boolean> {
     try {
       await this.loadMap();
       this.initView();
-      this.setSocketClient();
       await this.loadUser();
       if (this.isUserActive()) {
         await this.findRidesByBound();
@@ -151,6 +130,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
       }
       this.loadDataTable();
       await this.loadUserLocation();
+      setupSocketClient(this);
       return true;
     } catch (err) {
       console.error(err);
@@ -488,13 +468,13 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
   }
 
   private loadDataTable(): void {
-    // $(() => {
     this.dataTable = $('#table_id').DataTable({
       autoWidth: true,
       scrollCollapse: true,
       info: false,
       jQueryUI: true,
       pageLength: 5,
+      scrollY: '30vh',
       paging: false,
       searching: true,
       language: {
@@ -517,7 +497,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
           orderable: false,
         },
         {
-          data: 'vehicle.type',
+          data: 'vehicleType',
           className: 'text-center',
           render: (data, type, row, meta) => {
             return this.vehiclePipe.transform(data);
@@ -551,17 +531,20 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
         },
         { data: 'criterions', searchable: true, orderable: false },
       ],
-      drawCallback: (settings: any) => {
-        this.changeLinesColor();
-      },
     });
-
+    $('#table_id_filter > label > input[type=search]').on('keyup', (e) => {
+      const hasText: boolean =
+        $('#table_id_filter > label > input[type=search]')
+          .val()!
+          .toString()
+          .trim().length > 0;
+      this.onSearchDataTable(hasText);
+    });
     $(document).on('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key == 'x') {
         this.toggleDataTable();
       }
     });
-    // });
   }
 
   error: Error = {
@@ -588,7 +571,7 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
     this.toggleRideInfoModal('NO_ID', false);
   }
 
-  private async findRidesByBound(): Promise<void> {
+  public async findRidesByBound(): Promise<void> {
     if (this.isUserActive()) {
       let res: FindRidesResponse[] | undefined = await this.rideService
         .findRidesByBound(
@@ -608,9 +591,11 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
   }
 
   private async loadAllRides(): Promise<void> {
-    const res = await this.rideService.findAllRides().toPromise();
+    const res: FindRidesResponse[] | undefined = await this.rideService
+      .findAllRides()
+      .toPromise();
     res!.forEach((ride) => {
-      addRide(ride.id, this, ride.path, ride.photoURL);
+      addRide(ride.id, this, ride.path, ride.photoURL, ride.status);
     });
   }
 
@@ -931,34 +916,49 @@ export class MapboxComponent implements AfterViewInit, OnDestroy, OnInit {
   }
 
   // helper
-  dataTableIds: string[] = [];
-  private changeLinesColor(): void {
-    const data = ($('#table_id').dataTable().api() as any)
-      .rows({ page: 'current' })
-      .data();
+  dataTableState: DataTableState[] = [];
+  private onSearchDataTable(hasText: boolean): void {
+    let data;
+    if (hasText) {
+      data = ($('#table_id').dataTable().api() as any)
+        .rows({ page: 'current' })
+        .data();
+    } else {
+      data = [];
+    }
+    const lineColor: string = 'line-color';
 
-    let _temp: string[] = [];
+    let _temp: DataTableState[] = [];
     for (let i = 0; i < data.length; i++) {
-      let id = (data[i] as FindRidesResponse).id;
-      _temp.push(id);
-      this.map.setPaintProperty(`${id}-path`, 'line-color', COLOR['pink']);
+      let row = data[i] as FindRidesResponse;
+      _temp.push({
+        id: row.id,
+        state: row.status,
+      });
+
+      this.map.setPaintProperty(`${row.id}-path`, lineColor, COLOR_PINK);
       this.map.setPaintProperty(
-        `${id}-path-casing`,
+        `${row.id}-path-casing`,
         'line-color',
-        COLOR['pink-dark']
+        COLOR_PINK_DARK
       );
-      this.dataTableIds = this.dataTableIds.filter((i) => i != id);
+
+      this.dataTableState = this.dataTableState.filter((r) => r.id != row.id);
     }
 
-    this.dataTableIds.forEach((i) => {
-      this.map.setPaintProperty(`${i}-path`, 'line-color', COLOR['blue']);
+    this.dataTableState.forEach((r) => {
       this.map.setPaintProperty(
-        `${i}-path-casing`,
+        `${r.id}-path`,
+        lineColor,
+        getColorByStatus(r.state, 'path')
+      );
+      this.map.setPaintProperty(
+        `${r.id}-path-casing`,
         'line-color',
-        COLOR['blue-dark']
+        getColorByStatus(r.state, 'case')
       );
     });
-    this.dataTableIds = _temp;
+    this.dataTableState = _temp;
   }
 
   //listener

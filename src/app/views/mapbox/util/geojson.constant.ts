@@ -60,6 +60,20 @@ export const COLOR: Color = {
   red: '#f20007',
 };
 
+export const COLOR_PINK = '#e3adbe';
+export const COLOR_PINK_DARK = '#b75676';
+
+export const COLOR_BLUE = '#4fd2f4';
+export const COLOR_BLUE_DARK = '#3a63b8';
+
+export const COLOR_RED = '#f20007';
+
+export const COLOR_GREY = '#ccc0bc';
+export const COLOR_GREY_DARK = '#a4948a';
+
+export const COLOR_GREEN = '#a9e796';
+export const COLOR_GREEN_DARK = '#008f2a';
+
 export {
   MAPBOX_OPTIONS,
   GEOCODER_OPT_END_POINT,
